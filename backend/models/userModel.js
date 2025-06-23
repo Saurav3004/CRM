@@ -1,37 +1,25 @@
 import mongoose from "mongoose";
 
+
 const userSchema = new mongoose.Schema({
   firstName: String,
   lastName: String,
-  fullName: String,
-  email: {
-    type: String,
-    required: true,
-    unique: true, // recommended for clean user management
-    lowercase: true,
-    trim: true
-  },
-  gender: { type: String, enum: ["Male", "Female", "Other"] },
+  email: { type: String, required: true, unique: true },
+  mobile: String,
   dob: Date,
-  mobile: {
-    type: String,
-    trim: true,
-  },
+  gender: String,
   city: String,
-  country: String,
   state: String,
-  age: Number,
-  totalSpent: {
-    type: Number,
-    default: 0
-  },
+  country: String,
   socialMedia: {
     instagram: String,
     tiktok: String,
-    spotify:String
-  }
-}, {
-  timestamps: true
-});
+    spotify: String,
+  },
+  totalSpent: { type: Number, default: 0 },
+  eventsPurchased: { type: Number, default: 0 },
+  ticketsPurchased: { type: Number, default: 0 },
+  lastActivity: Date,
+}, { timestamps: true });
 
 export const User = mongoose.model("User", userSchema);

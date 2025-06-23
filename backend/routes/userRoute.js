@@ -1,10 +1,9 @@
 import express from 'express';
-import { getAllUsers, getUserProfile, importCSVData } from '../controllers/userController.js';
-import upload from '../utils/multer.js'
+import { getAllUsersWithDetails, getUserProfileById } from '../controllers/userController.js';
 const router = express.Router()
 
-router.post('/import-excel',upload.none(),importCSVData)
-router.get('/allusers',getAllUsers)
-router.get("/:id",getUserProfile)
+
+router.get('/allusers',getAllUsersWithDetails)
+router.get("/:id",getUserProfileById)
 
 export default router

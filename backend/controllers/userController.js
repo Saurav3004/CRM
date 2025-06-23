@@ -1,212 +1,80 @@
+import { User } from '../models/userModel.js';
+import { Booking } from '../models/bookingModel.js';
+import { Payment } from '../models/paymentModel.js';
 
-import { User } from "../models/userModel.js";
-import { Booking } from "../models/bookingModel.js";
-import { Event } from "../models/eventModel.js";
-
-
-export const importCSVData = async (req, res) => {
+// 🧠 Fetch all users with aggregated booking details
+export const getAllUsersWithDetails = async (req, res) => {
   try {
-    const data = JSON.parse(req.body.data);
-    const importType = req.body.importType || 'lead';
-    const mode = req.body.mode || 'live'; // 'live' or 'historical'
+    const users = await User.find({}).lean();
 
-    if (!Array.isArray(data) || data.length === 0) {
-      return res.status(400).json({ message: "Invalid or empty data" });
-    }
+    const enrichedUsers = await Promise.all(users.map(async (user) => {
+      const bookings = await Booking.find({ user: user._id }).lean();
 
-    const bookings = [];
-    const leads = [];
-
-    for (const row of data) {
-      const {
-        firstName,
-        lastName,
-        email,
-        dob,
-        mobile,
-        ticketType,
-        eventName,
-        eventDate,
-        venue,
-        ticketPrice,
-        quantity
-      } = row;
-
-      if (!email) continue;
-
-      // 1. Find or create user
-      let user = await User.findOne({ email });
-      if (!user) {
-        user = await User.create({
-          email,
-          firstName,
-          lastName,
-          gender,
-          dob,
-          fullName: `${firstName} ${lastName}` || email.split("@")[0],
-          mobile,
-          totalSpent: 0
-        });
-      }
-
-      // 2. If no eventName, treat as lead
-      if (!eventName || eventName.trim() === '') {
-        leads.push(user);
-        continue;
-      }
-
-      // 3. Find event
-      const event = await Event.findOne({
-        eventName: new RegExp(`^${eventName.trim()}$`, "i"),
-        venue: new RegExp(`^${(venue || "Unknown Venue").trim()}$`, "i")
-      });
-
-      if (!event) {
-        console.warn(`Event not found: ${eventName}`);
-        continue;
-      }
-
-      // 4. Find matching ticket type
-      const ticket = event.ticketTypes.find(
-        t => t.type.toLowerCase() === (ticketType || '').toLowerCase()
-      );
-
-      if (!ticket) {
-        console.warn(`Ticket type '${ticketType}' not found in event '${eventName}'`);
-        continue;
-      }
-
-      const qty = Number(quantity || 1);
-      const price = parseFloat(ticketPrice || ticket.price || 0);
-      const totalAmount = qty * price;
-
-      // 5. In live mode, check availability
-      if (mode === 'live') {
-        if (ticket.quantity < qty) {
-          console.warn(`Not enough ${ticketType} tickets for ${eventName}`);
-          continue;
-        }
-
-        // Subtract from stock
-        ticket.quantity -= qty;
-        await event.save();
-      }
-
-      // 6. Update user's totalSpent
-      await User.updateOne(
-        { _id: user._id },
-        { $inc: { totalSpent: totalAmount } }
-      );
-
-      // 7. Create booking
-      bookings.push({
-        user: user._id,
-        event: event._id,
-        ticketType,
-        quantity: qty,
-        bookingDate: eventDate ? new Date(eventDate) : new Date()
-      });
-    }
-
-    let bookingResult = [];
-    if (bookings.length > 0) {
-      bookingResult = await Booking.insertMany(bookings);
-    }
-
-    return res.status(200).json({
-      message: `Imported ${bookingResult.length} bookings (${mode} mode) and ${leads.length} leads.`,
-      details: {
-        bookingsCreated: bookingResult.length,
-        leadsImported: leads.length,
-        modeUsed: mode
-      }
-    });
-  } catch (error) {
-    console.error("Import Error:", error);
-    res.status(500).json({
-      message: "Import failed",
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
-    });
-  }
-};
-
-
-
-
-export const getAllUsers = async (req, res) => {
-  try {
-    const users = await User.find();
-
-    const userIds = users.map((user) => user._id);
-
-    const bookings = await Booking.find({ user: { $in: userIds } })
-      .populate('event')
-      .populate('user');
-
-    const userMap = {};
-
-    users.forEach(user => {
-      userMap[user._id] = {
-        ...user.toObject(),
-        bookings: [],
-        totalSpent: user.totalSpent || 0
-      };
-    });
-
-    bookings.forEach(booking => {
-      const userId = booking.user._id.toString();
-      if (userMap[userId]) {
-        userMap[userId].bookings.push(booking);
-      }
-    });
-
-    const finalUsers = Object.values(userMap).map(user => {
-      const eventIds = new Set();
-
-      user.bookings.forEach(booking => {
-        if (booking.event?._id) {
-          eventIds.add(String(booking.event._id));
-        }
-      });
+      const totalTicketsPurchased = bookings.reduce((sum, b) => sum + (b.quantity || 0), 0);
+      const uniqueEvents = new Set(bookings.map(b => b.eventName)).size;
 
       return {
         ...user,
-        totalUniqueEvents: eventIds.size,
-        totalBookings: user.bookings.length
+        bookings,
+        totalSpent: user.totalSpent || 0,
+        totalTicketsPurchased,
+        totalUniqueEvents: uniqueEvents,
       };
-    });
+    }));
 
-    return res.status(200).json({
-      message: "Users fetched",
-      users: finalUsers
-    });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Internal server error" });
+    res.status(200).json({ users: enrichedUsers });
+  } catch (error) {
+    console.error("Fetch Users Error:", error);
+    res.status(500).json({ message: "Failed to fetch users", error: error.message });
   }
 };
 
+// 🧾 Get user profile by ID with bookings & payments
+export const getUserProfileById = async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    const user = await User.findById(id).lean();
+    if (!user) return res.status(404).json({ message: 'User not found' });
 
-export const getUserProfile = async (req, res) => {
-  const id = req.params["id"];
+    const bookings = await Booking.find({ user: id }).lean();
+    const payments = await Payment.find({ user: id }).lean();
 
-  const user = await User.findById(id);
+    const totalTicketsPurchased = bookings.reduce((sum, b) => sum + (b.quantity || 0), 0);
+    const totalUniqueEvents = new Set(bookings.map(b => b.eventName)).size;
+    const totalSpent = user.totalSpent || 0;
 
-  const bookings = await Booking.find({ user: user._id });
+    const formattedBookings = bookings.map(b => ({
+      bookingId: b.bookingId,
+      eventName: b.eventName || 'N/A',
+      ticketType: b.ticketType || 'N/A',
+      ticketPrice: b.ticketPrice || 0,
+      quantity: b.quantity,
+      bookingDate: b.bookedDate,
+      venue: b.venue || 'Unknown'
+    }));
 
-  const uniqueEventIds = new Set(
-    bookings.map((booking) => booking.event.toString())
-  );
-  const uniqueEventsBooked = uniqueEventIds.size;
+    const formattedPayments = payments.map(p => ({
+      paymentId: p.paymentId,
+      amount: p.amount,
+      method: p.method,
+      status: p.status,
+      date: p.transactionDate
+    }));
 
-  console.log(bookings);
+    const profile = {
+      ...user,
+      totalSpent,
+      totalTicketsPurchased,
+      totalUniqueEvents,
+      bookings: formattedBookings,
+      payments: formattedPayments
+    };
 
-  return res.status(200).json({
-    user,
-    bookings,
-    uniqueEventsBooked,
-  });
+    res.status(200).json({ user: profile });
+
+  } catch (error) {
+    console.error("User profile error:", error);
+    res.status(500).json({ message: "Failed to fetch user profile", error: error.message });
+  }
 };

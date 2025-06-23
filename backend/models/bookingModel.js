@@ -1,30 +1,16 @@
 import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  event: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Event',
-    required: true
-  },
-  ticketType: {
-    type: String,
-    required: true // must match one of the event's ticketTypes
-  },
-  quantity: {
-    type: Number,
-    default: 1
-  },
-  bookingDate: {
-    type: Date,
-    default: Date.now
-  }
-}, {
-  timestamps: true
-});
+  bookingId: { type: String, required: true, unique: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  ticketId: { type: String },
+  eventName: { type: String, required: true },
+  venue: String,
+  ticketType: String,
+  ticketPrice: Number,
+  quantity: Number,
+  bookedDate: Date,
+  source: String,
+}, { timestamps: true });
 
 export const Booking = mongoose.model("Booking", bookingSchema);
