@@ -12,10 +12,12 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "mongoose": "^8.16.0",
     "multer": "^2.0.1",
+    "nanoid": "^5.1.5",
     "xlsx": "^0.18.5"
   }
 }

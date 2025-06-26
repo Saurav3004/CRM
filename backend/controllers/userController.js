@@ -50,7 +50,7 @@ export const getUserProfileById = async (req, res) => {
       ticketType: b.ticketType || 'N/A',
       ticketPrice: b.ticketPrice || 0,
       quantity: b.quantity,
-      bookingDate: b.bookedDate,
+      bookedDate: b.bookedDate,
       venue: b.venue || 'Unknown'
     }));
 

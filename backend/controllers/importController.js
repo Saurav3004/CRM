@@ -1,157 +1,238 @@
 import { User } from '../models/userModel.js';
 import { Booking } from '../models/bookingModel.js';
 import { Payment } from '../models/paymentModel.js';
+import { Ticket } from '../models/ticketModel.js';
+import { parse, isValid } from 'date-fns';
+import { nanoid } from 'nanoid';
 
-// Detect import type
+// Helper: Clean value
+const clean = (val) => typeof val === 'string' ? val.trim() : val;
+
+// Helper: Detect import type
 export const detect = (headers) => {
   const lower = headers.map(h => h.toLowerCase());
-  if (lower.includes('bookingid') && lower.includes('eventname')) return 'booking';
-  if (lower.includes('paymentid') && lower.includes('amount')) return 'payment';
-  if (lower.includes('email') && (lower.includes('fullname') || lower.includes('firstname'))) return 'user';
-  return 'combined';
+  const hasUser = lower.includes('email') && (lower.includes('firstname') || lower.includes('fullname'));
+  const hasBooking = lower.includes('bookingid') && lower.includes('eventname');
+  const hasPayment = lower.includes('paymentid') && lower.includes('amount');
+  if (hasBooking) return 'booking';
+  if (hasPayment) return 'payment';
+  if (hasUser) return 'user';
+  return 'unknown';
 };
 
+// Helper: Parse date
+const parseDate = (val) => {
+  if (!val || typeof val !== 'string') return null;
+  const trimmed = val.trim().toLowerCase();
+  if (['n/a', 'na', '', '-'].includes(trimmed)) return null;
+
+  let parsed = parse(trimmed, 'yyyy-MM-dd', new Date());
+  if (isValid(parsed)) return parsed;
+
+  parsed = parse(trimmed, 'dd-MM-yyyy', new Date());
+  if (isValid(parsed)) return parsed;
+
+  return null;
+};
+
+// Main Import Controller
 export const importCSVData = async (req, res) => {
   try {
     const rows = JSON.parse(req.body.data);
     if (!Array.isArray(rows) || rows.length === 0)
-      return res.status(400).json({ message: "Invalid or empty data" });
+      return res.status(400).json({ message: 'Invalid or empty data' });
 
     const headers = Object.keys(rows[0]);
     const importType = detect(headers);
+    console.log('📥 Detected import type:', importType);
 
     const inserted = [], updated = [], skipped = [];
 
     for (const row of rows) {
-      try {
-        const email = row.email || row.userEmail;
-        if (!email) {
-          skipped.push({ row, reason: "Missing user email" });
-          continue;
-        }
+      const email = clean(row.email || row.userEmail);
+      if (!email) {
+        skipped.push({ reason: 'Missing user email', row });
+        continue;
+      }
 
-        // ----- USER -----
-        let user = await User.findOne({ email });
+      let user = await User.findOne({ email });
+
+      // USER IMPORT
+      if (importType === 'user') {
         if (!user) {
-          user = await User.create({
-            firstName: row.firstName,
-            lastName: row.lastName,
-            email,
-            mobile: row.mobile,
-            dob: row.dob ? new Date(row.dob) : undefined,
-            gender: row.gender,
-            city: row.city,
-            state: row.state,
-            country: row.country,
-            socialMedia: {
-              instagram: row["socialMedia.instagram"] || row.instagram,
-              tiktok: row["socialMedia.tiktok"] || row.tiktok,
-              spotify: row["socialMedia.spotify"] || row.spotify
-            },
-            totalSpent: 0,
-            eventsPurchased: 0,
-            ticketsPurchased: 0
-          });
-          inserted.push({ type: 'user', email });
+          const dob = parseDate(row.dob);
+          try {
+            user = await User.create({
+              firstName: clean(row.firstName),
+              lastName: clean(row.lastName),
+              email,
+              mobile: clean(row.mobile),
+              dob,
+              gender: clean(row.gender),
+              city: clean(row.city),
+              state: clean(row.state),
+              country: clean(row.country),
+              socialMedia: {
+                instagram: clean(row['socialMedia.instagram']),
+                tiktok: clean(row['socialMedia.tiktok']),
+                spotify: clean(row['socialMedia.spotify'])
+              },
+              totalSpent: 0,
+              eventsPurchased: 0,
+              ticketsPurchased: 0
+            });
+            inserted.push({ type: 'user', email });
+          } catch (err) {
+            skipped.push({ reason: 'User creation failed: ' + err.message, row });
+          }
         } else {
           updated.push({ type: 'user', email });
         }
+        continue;
+      }
 
-        if (importType === 'user') continue;
+      // BOOKING IMPORT (with ticket append support)
+      if (importType === 'booking') {
+        const bookingId = clean(row.bookingId);
+        const eventName = clean(row.eventName);
+        const ticketType = clean(row.ticketType);
+        const price = Number(row.ticketPrice || 0);
+        const qty = Number(row.quantity || 1);
 
-        // ----- BOOKING -----
-        const bookingId = row.bookingId;
-        if (!bookingId) {
-          skipped.push({ row, reason: "Missing bookingId" });
+        if (!bookingId || !eventName || !ticketType || isNaN(price) || isNaN(qty)) {
+          skipped.push({ reason: 'Invalid booking fields', bookingId, email });
           continue;
         }
 
-        const qty = Number(row.quantity || 1);
-        const price = Number(row.ticketPrice || 0);
-        const amount = qty * price;
-
-        let booking = await Booking.findOne({ bookingId });
-
-        let isNewBooking = false;
-        if (!booking) {
-          booking = await Booking.create({
-            bookingId,
-            user: user._id,
-            ticketId: row.ticketId,
-            eventName: row.eventName,
-            venue: row.venue,
-            ticketType: row.ticketType,
-            ticketPrice: price,
-            quantity: qty,
-            bookedDate: row.bookedDate ? new Date(row.bookedDate) : new Date(),
-            source: row.source || 'CSV'
-          });
-
-          inserted.push({ type: 'booking', bookingId });
-          isNewBooking = true;
-        } else {
-          updated.push({ type: 'booking', bookingId });
+        if (!user) {
+          skipped.push({ reason: 'No user found for booking', email });
+          continue;
         }
 
-        // ✅ Only increment user totals if booking is new
-        if (isNewBooking) {
+        let bookedDate = parseDate(row.bookedDate) || new Date();
+        const existing = await Booking.findOne({ bookingId });
+
+        if (!existing) {
+          // New Booking
+          const newBooking = await Booking.create({
+            bookingId,
+            user: user._id,
+            ticketId: clean(row.ticketId),
+            eventName,
+            venue: clean(row.venue),
+            ticketType,
+            ticketPrice: price,
+            quantity: qty,
+            bookedDate,
+            source: clean(row.source || 'CSV')
+          });
+
+          const tickets = [];
+          for (let i = 1; i <= qty; i++) {
+            tickets.push({
+              ticketCode: `TIX-${bookingId}-${i}-${nanoid(6)}`,
+              bookingId: newBooking._id,
+              user: user._id,
+              eventName,
+              ticketType,
+              ticketPrice: price,
+              qrCode: `QR-${bookingId}-${i}-${nanoid(4)}`
+            });
+          }
+
+          const saved = await Ticket.insertMany(tickets);
+          newBooking.tickets = saved.map(t => t._id);
+          await newBooking.save();
+
           await User.updateOne(
             { _id: user._id },
             {
               $inc: {
-                totalSpent: amount,
+                totalSpent: price * qty,
                 eventsPurchased: 1,
                 ticketsPurchased: qty
               },
               $set: { lastActivity: new Date() }
             }
           );
-        }
 
-        if (importType === 'booking' && !(row.paymentId || row.amount || row.transactionDate)) continue;
-
-        // ----- PAYMENT -----
-        if (row.paymentId || row.amount || row.transactionDate) {
-          const paymentId = row.paymentId;
-          if (!paymentId) {
-            skipped.push({ row, reason: "Missing paymentId" });
-          } else {
-            const existingPayment = await Payment.findOne({ paymentId });
-            if (!existingPayment) {
-              await Payment.create({
-                paymentId,
-                user: user._id,
-                booking: booking._id,
-                amount: Number(row.amount) || 0,
-                method: row.method || 'unknown',
-                status: row.status || 'paid',
-                transactionDate: row.transactionDate ? new Date(row.transactionDate) : new Date()
-              });
-              inserted.push({ type: 'payment', paymentId });
-            } else {
-              updated.push({ type: 'payment', paymentId });
-            }
+          inserted.push({ type: 'booking', bookingId });
+        } else {
+          // Append new tickets to existing booking
+          const tickets = [];
+          for (let i = 1; i <= qty; i++) {
+            tickets.push({
+              ticketCode: `TIX-${bookingId}-${i}-${nanoid(6)}`,
+              bookingId: existing._id,
+              user: user._id,
+              eventName,
+              ticketType,
+              ticketPrice: price,
+              qrCode: `QR-${bookingId}-${i}-${nanoid(4)}`
+            });
           }
+
+          const saved = await Ticket.insertMany(tickets);
+          existing.tickets.push(...saved.map(t => t._id));
+          existing.quantity += qty;
+          await existing.save();
+
+          await User.updateOne(
+            { _id: user._id },
+            {
+              $inc: {
+                totalSpent: price * qty,
+                ticketsPurchased: qty
+              },
+              $set: { lastActivity: new Date() }
+            }
+          );
+
+          updated.push({ type: 'booking', bookingId });
+        }
+        continue;
+      }
+
+      // PAYMENT IMPORT
+      if (importType === 'payment') {
+        const paymentId = clean(row.paymentId);
+        const bookingId = clean(row.bookingId);
+        const transactionDate = parseDate(row.transactionDate);
+        const amount = Number(row.amount || 0);
+
+        if (!paymentId || !bookingId || isNaN(amount) || !transactionDate) {
+          skipped.push({ reason: 'Invalid payment fields', paymentId, bookingId });
+          continue;
         }
 
-      } catch (err) {
-        skipped.push({ row, reason: err.message });
+        const booking = await Booking.findOne({ bookingId });
+        if (!booking) {
+          skipped.push({ reason: 'No booking found for payment', bookingId });
+          continue;
+        }
+
+        if (!user) {
+          skipped.push({ reason: 'No user found for payment', email });
+          continue;
+        }
+
+        const exists = await Payment.findOne({ paymentId, booking: booking._id });
+        if (!exists) {
+          await Payment.create({
+            paymentId,
+            user: user._id,
+            booking: booking._id,
+            amount,
+            method: clean(row.method || 'unknown'),
+            status: clean(row.status || 'paid'),
+            transactionDate
+          });
+          inserted.push({ type: 'payment', paymentId });
+        } else {
+          updated.push({ type: 'payment', paymentId });
+        }
+        continue;
       }
-    }
-
-    // ✅ (Optional) Final recalculation to ensure correctness
-    const allUsers = await User.find({});
-    for (const u of allUsers) {
-      const bookings = await Booking.find({ user: u._id });
-      const tickets = bookings.reduce((sum, b) => sum + (b.quantity || 0), 0);
-      const events = new Set(bookings.map(b => b.eventName)).size;
-      const spent = bookings.reduce((sum, b) => sum + ((b.ticketPrice || 0) * (b.quantity || 0)), 0);
-
-      await User.updateOne({ _id: u._id }, {
-        ticketsPurchased: tickets,
-        eventsPurchased: events,
-        totalSpent: spent
-      });
     }
 
     return res.status(200).json({
@@ -164,7 +245,7 @@ export const importCSVData = async (req, res) => {
       skipped
     });
   } catch (err) {
-    console.error("Import failed:", err);
-    return res.status(500).json({ message: "Import failed", error: err.message });
+    console.error('❌ Import failed:', err);
+    return res.status(500).json({ message: 'Import failed', error: err.message });
   }
 };
