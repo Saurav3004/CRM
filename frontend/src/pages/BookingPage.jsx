@@ -145,13 +145,13 @@ const BookingDetails = () => {
             <div key={ticket._id} className="border p-4 rounded-lg mb-3">
               <div className="flex items-center justify-between">
                 <p><Ticket className="inline w-4 h-4 mr-1" /> <strong>{ticket.ticketCode}</strong></p>
-                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700">{ticket.status}</span>
+                {/* <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700">{ticket.status}</span> */}
               </div>
               <div className="text-sm mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <div><MapPin className="inline w-4 h-4 mr-1" /> {ticket.eventName}</div>
                 <div><DollarSign className="inline w-4 h-4 mr-1" /> AUD {ticket.ticketPrice}</div>
-                
-                <div><DivideSquare className="inline w-4 h-4 mr-1" /> {ticket.ticketType}</div>
+                {/* <div><QrCode className="inline w-4 h-4 mr-1" /> {ticket.qrCode}</div> */}
+                <div className='text-lg'><DivideSquare className="inline w-5 h-5mr-1" /> {ticket.ticketType}</div>
               </div>
             </div>
           ))
