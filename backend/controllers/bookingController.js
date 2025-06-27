@@ -1,5 +1,4 @@
 import { Booking } from '../models/bookingModel.js';
-import { Ticket } from '../models/ticketModel.js';
 import { Payment } from '../models/paymentModel.js';
 
 export const getBookingDetails = async (req, res) => {
