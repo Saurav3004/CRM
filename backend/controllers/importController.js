@@ -5,10 +5,8 @@ import { Ticket } from '../models/ticketModel.js';
 import { parse, isValid } from 'date-fns';
 import { nanoid } from 'nanoid';
 
-// Helper: Clean value
 const clean = (val) => typeof val === 'string' ? val.trim() : val;
 
-// Helper: Detect import type
 export const detect = (headers) => {
   const lower = headers.map(h => h.toLowerCase());
   const hasUser = lower.includes('email') && (lower.includes('firstname') || lower.includes('fullname'));
@@ -20,7 +18,6 @@ export const detect = (headers) => {
   return 'unknown';
 };
 
-// Helper: Parse date
 const parseDate = (val) => {
   if (!val || typeof val !== 'string') return null;
   const trimmed = val.trim().toLowerCase();
@@ -35,7 +32,6 @@ const parseDate = (val) => {
   return null;
 };
 
-// Main Import Controller
 export const importCSVData = async (req, res) => {
   try {
     const rows = JSON.parse(req.body.data);
@@ -57,7 +53,7 @@ export const importCSVData = async (req, res) => {
 
       let user = await User.findOne({ email });
 
-      // USER IMPORT
+      // 🟢 USER IMPORT
       if (importType === 'user') {
         if (!user) {
           const dob = parseDate(row.dob);
@@ -75,7 +71,7 @@ export const importCSVData = async (req, res) => {
               socialMedia: {
                 instagram: clean(row['socialMedia.instagram']),
                 tiktok: clean(row['socialMedia.tiktok']),
-                spotify: clean(row['socialMedia.spotify'])
+                spotify: clean(row['socialMedia.spotify']),
               },
               totalSpent: 0,
               eventsPurchased: 0,
@@ -91,109 +87,116 @@ export const importCSVData = async (req, res) => {
         continue;
       }
 
-      // BOOKING IMPORT (with ticket append support)
+      // 🟢 BOOKING IMPORT
       if (importType === 'booking') {
-        const bookingId = clean(row.bookingId);
-        const eventName = clean(row.eventName);
-        const ticketType = clean(row.ticketType);
-        const price = Number(row.ticketPrice || 0);
-        const qty = Number(row.quantity || 1);
+  const bookingId = clean(row.bookingId);
+  const eventName = clean(row.eventName);
+  const ticketType = clean(row.ticketType);
+  const price = Number(row.ticketPrice || 0);
+  const qty = Number(row.quantity || 1);
 
-        if (!bookingId || !eventName || !ticketType || isNaN(price) || isNaN(qty)) {
-          skipped.push({ reason: 'Invalid booking fields', bookingId, email });
-          continue;
-        }
+  if (!bookingId || !eventName || !ticketType || isNaN(price) || isNaN(qty)) {
+    skipped.push({ reason: 'Invalid booking fields', bookingId, email });
+    continue;
+  }
 
-        if (!user) {
-          skipped.push({ reason: 'No user found for booking', email });
-          continue;
-        }
+  if (!user) {
+    skipped.push({ reason: 'No user found for booking', email });
+    continue;
+  }
 
-        let bookedDate = parseDate(row.bookedDate) || new Date();
-        const existing = await Booking.findOne({ bookingId });
+  const bookedDate = parseDate(row.bookedDate) || new Date();
+  let booking = await Booking.findOne({ bookingId });
 
-        if (!existing) {
-          // New Booking
-          const newBooking = await Booking.create({
-            bookingId,
-            user: user._id,
-            ticketId: clean(row.ticketId),
-            eventName,
-            venue: clean(row.venue),
-            ticketType,
-            ticketPrice: price,
-            quantity: qty,
-            bookedDate,
-            source: clean(row.source || 'CSV')
-          });
+  const totalPaid = price * qty;
 
-          const tickets = [];
-          for (let i = 1; i <= qty; i++) {
-            tickets.push({
-              ticketCode: `TIX-${bookingId}-${i}-${nanoid(6)}`,
-              bookingId: newBooking._id,
-              user: user._id,
-              eventName,
-              ticketType,
-              ticketPrice: price,
-              qrCode: `QR-${bookingId}-${i}-${nanoid(4)}`
-            });
-          }
+  if (!booking) {
+    // Step 1: Create new booking with empty ticket array
+    booking = await Booking.create({
+      bookingId,
+      user: user._id,
+      eventName,
+      venue: clean(row.venue),
+      ticketType,
+      ticketPrice: price,
+      quantity: qty,
+      bookedDate,
+      source: clean(row.source || 'CSV'),
+      tickets: [],
+      totalPaid: totalPaid
+    });
 
-          const saved = await Ticket.insertMany(tickets);
-          newBooking.tickets = saved.map(t => t._id);
-          await newBooking.save();
+    // Step 2: Create tickets now with booking._id
+    const tickets = [];
+    for (let i = 1; i <= qty; i++) {
+      tickets.push({
+        ticketCode: `TIX-${bookingId}-${i}-${nanoid(6)}`,
+        bookingId: booking._id, // ✅ now we have booking._id
+        user: user._id,
+        eventName,
+        ticketType,
+        ticketPrice: price,
+        qrCode: `QR-${bookingId}-${i}-${nanoid(4)}`
+      });
+    }
 
-          await User.updateOne(
-            { _id: user._id },
-            {
-              $inc: {
-                totalSpent: price * qty,
-                eventsPurchased: 1,
-                ticketsPurchased: qty
-              },
-              $set: { lastActivity: new Date() }
-            }
-          );
+    const savedTickets = await Ticket.insertMany(tickets);
+    booking.tickets = savedTickets.map(t => t._id);
+    await booking.save();
 
-          inserted.push({ type: 'booking', bookingId });
-        } else {
-          // Append new tickets to existing booking
-          const tickets = [];
-          for (let i = 1; i <= qty; i++) {
-            tickets.push({
-              ticketCode: `TIX-${bookingId}-${i}-${nanoid(6)}`,
-              bookingId: existing._id,
-              user: user._id,
-              eventName,
-              ticketType,
-              ticketPrice: price,
-              qrCode: `QR-${bookingId}-${i}-${nanoid(4)}`
-            });
-          }
-
-          const saved = await Ticket.insertMany(tickets);
-          existing.tickets.push(...saved.map(t => t._id));
-          existing.quantity += qty;
-          await existing.save();
-
-          await User.updateOne(
-            { _id: user._id },
-            {
-              $inc: {
-                totalSpent: price * qty,
-                ticketsPurchased: qty
-              },
-              $set: { lastActivity: new Date() }
-            }
-          );
-
-          updated.push({ type: 'booking', bookingId });
-        }
-        continue;
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $inc: {
+          totalSpent: totalPaid,
+          eventsPurchased: 1,
+          ticketsPurchased: qty
+        },
+        $set: { lastActivity: new Date() }
       }
+    );
 
-      // PAYMENT IMPORT
+    inserted.push({ type: 'booking', bookingId });
+  } else {
+    // Append new tickets to existing booking
+    const tickets = [];
+    for (let i = 1; i <= qty; i++) {
+      tickets.push({
+        ticketCode: `TIX-${bookingId}-${i}-${nanoid(6)}`,
+        bookingId: booking._id,
+        user: user._id,
+        eventName,
+        ticketType,
+        ticketPrice: price,
+        qrCode: `QR-${bookingId}-${i}-${nanoid(4)}`
+      });
+    }
+
+    const saved = await Ticket.insertMany(tickets);
+    booking.tickets.push(...saved.map(t => t._id));
+    booking.quantity += qty;
+    booking.totalPaid += totalPaid;
+    await booking.save();
+
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $inc: {
+          totalSpent: totalPaid,
+          ticketsPurchased: qty
+        },
+        $set: { lastActivity: new Date() }
+      }
+    );
+
+    updated.push({ type: 'booking', bookingId });
+  }
+
+  continue;
+}
+
+
+      // 🟢 PAYMENT IMPORT
       if (importType === 'payment') {
         const paymentId = clean(row.paymentId);
         const bookingId = clean(row.bookingId);

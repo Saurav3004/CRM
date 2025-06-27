@@ -48,7 +48,7 @@ const BookingDetails = () => {
     <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
-          <p className="text-gray-600 font-medium">Loading user profile...</p>
+          <p className="text-gray-600 font-medium">Loading booking details...</p>
         </div>
       </div>
   )
@@ -150,7 +150,7 @@ const BookingDetails = () => {
               <div className="text-sm mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <div><MapPin className="inline w-4 h-4 mr-1" /> {ticket.eventName}</div>
                 <div><DollarSign className="inline w-4 h-4 mr-1" /> AUD {ticket.ticketPrice}</div>
-                <div><QrCode className="inline w-4 h-4 mr-1" /> {ticket.qrCode}</div>
+                
                 <div><DivideSquare className="inline w-4 h-4 mr-1" /> {ticket.ticketType}</div>
               </div>
             </div>
