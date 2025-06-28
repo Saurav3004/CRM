@@ -17,7 +17,7 @@ export const getBookingDetails = async (req, res) => {
 
     res.status(200).json({
       booking,
-      tickets: booking.tickets || [],  // ✅ ensure fallback
+      tickets: booking.tickets || [], 
       payments
     });
   } catch (err) {
