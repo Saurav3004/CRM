@@ -141,7 +141,7 @@ const UserProfile = () => {
 
           {/* Right: Bookings */}
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-xl font-bold mb-6 flex items-center"><Ticket className="w-5 h-5 mr-2" /> Booking History</h3>
+            <h3 className="text-xl font-bold mb-6 flex items-center"><Ticket className="w-5 h-5 mr-2" /> Booking History ({user.bookings.length})</h3>
             {!user.bookings || user.bookings.length === 0 ? (
               <div className="text-center py-12 text-gray-500">No bookings found for this user.</div>
             ) : (

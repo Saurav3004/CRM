@@ -83,7 +83,7 @@ const ImportDataModal = ({ isOpen, onClose, onSuccess }) => {
 
   const backendFieldOptions = [
     'firstName', 'lastName', 'email', 'mobile', 'dob', 'gender',
-    'city', 'state', 'country',
+    'city', 'state', 'country','marketingOptIn',
     'socialMedia.instagram', 'socialMedia.tiktok', 'socialMedia.spotify',
     'totalSpent', 'ticketId',
     'bookingId', 'userEmail', 'eventName', 'venue', 'ticketType', 'ticketPrice',

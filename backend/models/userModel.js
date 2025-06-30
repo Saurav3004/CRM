@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema({
     tiktok: String,
     spotify: String,
   },
+  marketingOptIn:{
+    type:Boolean,
+    default:false
+  },
   totalSpent: { type: Number, default: 0 },
   eventsPurchased: { type: Number, default: 0 },
   ticketsPurchased: { type: Number, default: 0 },
