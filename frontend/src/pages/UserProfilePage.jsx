@@ -127,7 +127,7 @@ const UserProfile = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard icon={Ticket} label="Total Tickets" value={user.ticketsPurchased || 0} color="text-purple-800" bgColor="bg-purple-50" />
           <StatCard icon={Star} label="Events Attended" value={user.eventsPurchased || 0} color="text-blue-800" bgColor="bg-blue-50" />
-          <StatCard icon={DollarSign} label="Total Spent" value={`${user.payments[0].currency} ${Math.floor(user.totalSpent) || 0}`} color="text-green-800" bgColor="bg-green-50" />
+          <StatCard icon={DollarSign} label="Total Spent" value={`${user.payments[0].currency} ${(user.totalSpent).toFixed(2) || 0}`} color="text-green-800" bgColor="bg-green-50" />
           <StatCard icon={Award} label="Member Since" value={user.createdAt ? new Date(user.createdAt).getFullYear() : 'N/A'} color="text-orange-800" bgColor="bg-orange-50" />
         </div>
 

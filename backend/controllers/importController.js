@@ -95,6 +95,7 @@ export const importCSVData = async (req, res) => {
               totalSpent: 0,
               eventsPurchased: 0,
               ticketsPurchased: 0,
+              marketingOptIn
             });
             inserted.push({ type: 'user', email });
           } catch (err) {

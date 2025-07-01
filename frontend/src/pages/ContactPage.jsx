@@ -32,6 +32,7 @@ const ContactPage = () => {
   const [importStats, setImportStats] = useState(null);
   const [visibleFields, setVisibleFields] = useState(DEFAULT_FIELDS);
   const [showColumnModal, setShowColumnModal] = useState(false);
+  const [loading,setLoading] = useState(true)
 
   const navigate = useNavigate();
 
@@ -39,6 +40,7 @@ const ContactPage = () => {
     try {
       const response = await axios.get("http://localhost:3000/api/user/allusers");
       setUsers(response.data.users || []);
+      setLoading(false)
     } catch (error) {
       console.error("Error fetching users:", error);
     }
@@ -54,6 +56,17 @@ const ContactPage = () => {
   );
 
   const handleUserClick = (id) => navigate(`/user/${id}`);
+
+  if(loading){
+    return (
+       <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+          <p className="text-gray-600 font-medium">Loading details...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 bg-gray-100 min-h-screen">

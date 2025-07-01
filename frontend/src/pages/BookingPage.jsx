@@ -91,7 +91,7 @@ console.log(data)
 
       {/* Ticket Filters */}
       <div className="bg-white p-6 rounded-xl shadow">
-        <h2 className="text-lg font-semibold mb-4">Issued Tickets</h2>
+        <h2 className="text-lg font-semibold mb-4">Issued Tickets ({tickets.length})</h2>
 
         {/* Filter Inputs */}
         <div className="grid md:grid-cols-4 sm:grid-cols-2 gap-4 mb-6">
@@ -169,8 +169,8 @@ console.log(data)
               <div className="flex items-center justify-between">
                 <p><CreditCard className="inline w-4 h-4 mr-1" /> #{payment.paymentId}</p>
                 <span className={`text-xs px-2 py-1 rounded-full ${
-                  payment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                  payment.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  payment.status !== 'cancelled' && 'pending' ? 'bg-green-100 text-green-800' :
+                  payment.status == 'pending' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-red-100 text-red-800'
                 }`}>{payment.status}</span>
               </div>
