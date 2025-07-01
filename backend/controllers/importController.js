@@ -12,7 +12,7 @@ const parseDate = (val) => {
   const trimmed = val.trim().toLowerCase();
   if (['n/a', 'na', '', '-'].includes(trimmed)) return null;
 
-  const formats = ['yyyy-MM-dd', 'dd-MM-yyyy', 'MM/dd/yyyy', 'MM/dd/yyyy HH:mm','MM-dd-yyyy HH:mm'];
+  const formats = ['yyyy-MM-dd', 'dd-MM-yyyy', 'MM/dd/yyyy', 'MM/dd/yyyy HH:mm', 'MM-dd-yyyy HH:mm'];
   for (const fmt of formats) {
     const parsed = parse(trimmed, fmt, new Date());
     if (isValid(parsed)) return parsed;
@@ -127,12 +127,12 @@ export const importCSVData = async (req, res) => {
         continue;
       }
 
+      // ✅ Handle multiple ticket types per booking
       if (shouldRunBooking && bookingId && row.eventName && !isNaN(quantity)) {
         const eventName = clean(row.eventName);
         const ticketType = clean(row.ticketType);
         const bookedDate = parseDate(row.bookedDate) || new Date();
 
-        // Fallback for missing ticket price
         if (price === 0 && totalPaid && quantity > 0) {
           price = totalPaid / quantity;
         }
@@ -150,46 +150,47 @@ export const importCSVData = async (req, res) => {
             user: user._id,
             eventName,
             venue: clean(row.venue),
-            ticketType,
-            ticketPrice: price,
-            quantity,
             bookedDate,
             source: clean(row.source || 'CSV'),
             tickets: [],
-            totalPaid: price * quantity
+            quantity: 0,
+            totalPaid: 0,
           });
-
-          const tickets = Array.from({ length: quantity }, (_, i) => ({
-            ticketCode: `TIX-${bookingId}-${i + 1}-${nanoid(6)}`,
-            bookingId: booking._id,
-            user: user._id,
-            eventName,
-            ticketType,
-            ticketPrice: price,
-            qrCode: `QR-${bookingId}-${i + 1}-${nanoid(4)}`
-          }));
-
-          const savedTickets = await Ticket.insertMany(tickets);
-          booking.tickets = savedTickets.map(t => t._id);
-          await booking.save();
-
-          await User.updateOne({ _id: user._id }, {
-            $inc: {
-              totalSpent: price * quantity,
-              eventsPurchased: 1,
-              ticketsPurchased: quantity
-            },
-            $set: { lastActivity: new Date() }
-          });
-
           inserted.push({ type: 'booking', bookingId });
         } else {
           updated.push({ type: 'booking', bookingId });
         }
+
+        const tickets = Array.from({ length: quantity }, (_, i) => ({
+          ticketCode: `TIX-${bookingId}-${ticketType}-${i + 1}-${nanoid(6)}`,
+          bookingId: booking._id,
+          user: user._id,
+          eventName,
+          ticketType,
+          ticketPrice: price,
+          qrCode: `QR-${bookingId}-${ticketType}-${i + 1}-${nanoid(4)}`
+        }));
+
+        const savedTickets = await Ticket.insertMany(tickets);
+
+        booking.tickets.push(...savedTickets.map(t => t._id));
+        booking.totalPaid += price * quantity;
+        booking.quantity += quantity;
+        await booking.save();
+
+        await User.updateOne({ _id: user._id }, {
+          $inc: {
+            totalSpent: price * quantity,
+            eventsPurchased: 1,
+            ticketsPurchased: quantity
+          },
+          $set: { lastActivity: new Date() }
+        });
       } else if (shouldRunBooking) {
         skipped.push({ reason: 'Missing booking fields', row });
       }
 
+      // 💳 Payment section
       if (shouldRunPayment && bookingId && !isNaN(amount) && transactionDate) {
         const booking = await Booking.findOne({ bookingId });
         if (!booking) {
@@ -225,7 +226,7 @@ export const importCSVData = async (req, res) => {
       }
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       message: `${inserted.length + updated.length} records processed.`,
       insertedCount: inserted.length,
       updatedCount: updated.length,
@@ -234,6 +235,7 @@ export const importCSVData = async (req, res) => {
       updated,
       skipped
     });
+
   } catch (err) {
     console.error('❌ Import failed:', err);
     res.status(500).json({ message: 'Import failed', error: err.message });

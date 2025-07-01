@@ -84,7 +84,7 @@ console.log(data)
         {Object.entries(grouped).map(([type, info], i) => (
           <div key={i} className="flex justify-between items-center border-b py-2">
             <p><Ticket className="inline w-4 h-4 mr-2" /> {type}</p>
-            <p>{info.count} × {data.payments.map((payment) => payment.currency)} {info.price} = <strong>{data.payments.map((payment) => payment.currency)} {info.count * info.price}</strong></p>
+            <p>{info.count} × {data.payments.map((payment) => payment.currency)} {info.price} = <strong>{data.payments.map((payment) => payment.currency)} {(info.count * info.price).toFixed(2)}</strong></p>
           </div>
         ))}
       </div>
