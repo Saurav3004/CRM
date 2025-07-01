@@ -59,7 +59,8 @@ export const getUserProfileById = async (req, res) => {
       amount: p.amount,
       method: p.method,
       status: p.status,
-      date: p.transactionDate
+      date: p.transactionDate,
+      currency: p.currency
     }));
 
     const profile = {

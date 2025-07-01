@@ -32,7 +32,7 @@ const BookingDetails = () => {
     });
     return grouped;
   };
-
+console.log(data)
   const applyFilters = (tickets) => {
     return tickets.filter(t => {
       const statusMatch = statusFilter === 'All' || t.status === statusFilter;
@@ -74,7 +74,7 @@ const BookingDetails = () => {
           <div><strong>Venue:</strong> {booking.venue}</div>
           <div><strong>Booked Date:</strong> {formatDate(booking.bookedDate)}</div>
           <div><strong>Total Tickets:</strong> {booking.quantity}</div>
-          <div><strong>Total Paid:</strong> AUD {total}</div>
+          <div><strong>Total Paid:</strong> {data.payments.map((payment) => payment.currency)} {total.toFixed(2)}</div>
         </div>
       </div>
 
@@ -84,7 +84,7 @@ const BookingDetails = () => {
         {Object.entries(grouped).map(([type, info], i) => (
           <div key={i} className="flex justify-between items-center border-b py-2">
             <p><Ticket className="inline w-4 h-4 mr-2" /> {type}</p>
-            <p>{info.count} × AUD {info.price} = <strong>AUD {info.count * info.price}</strong></p>
+            <p>{info.count} × {data.payments.map((payment) => payment.currency)} {info.price} = <strong>{data.payments.map((payment) => payment.currency)} {info.count * info.price}</strong></p>
           </div>
         ))}
       </div>
@@ -149,7 +149,7 @@ const BookingDetails = () => {
               </div>
               <div className="text-sm mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
                 <div><MapPin className="inline w-4 h-4 mr-1" /> {ticket.eventName}</div>
-                <div><DollarSign className="inline w-4 h-4 mr-1" /> AUD {ticket.ticketPrice}</div>
+                <div><DollarSign className="inline w-4 h-4 mr-1" /> {data.payments.map((payment) => payment.currency)} {ticket.ticketPrice}</div>
                 {/* <div><QrCode className="inline w-4 h-4 mr-1" /> {ticket.qrCode}</div> */}
                 <div className='text-lg'><DivideSquare className="inline w-5 h-5mr-1" /> {ticket.ticketType}</div>
               </div>
@@ -176,7 +176,7 @@ const BookingDetails = () => {
               </div>
               <div className="text-sm mt-2 grid grid-cols-2 gap-2">
                 <div>Method: {payment.method}</div>
-                <div>Amount: AUD {payment.amount}</div>
+                <div>Amount: {data.payments.map((payment) => payment.currency)} {payment.amount}</div>
                 <div>Date: {formatDate(payment.transactionDate)}</div>
               </div>
             </div>

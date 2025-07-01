@@ -5,7 +5,7 @@ const ticketSchema = new mongoose.Schema({
   bookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: true },
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   eventName: String,
-  ticketType: String,
+  ticketType: {type:String,default:"General"},
   ticketPrice: Number,
   qrCode: String,
   status: {
