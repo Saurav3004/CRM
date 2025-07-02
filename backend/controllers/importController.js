@@ -73,6 +73,7 @@ export const importCSVData = async (req, res) => {
 
       let user = email ? await User.findOne({ email }) : null;
 
+      // 👉 Create User if Needed
       if (shouldRunUser && email) {
         if (!user) {
           try {
@@ -95,7 +96,7 @@ export const importCSVData = async (req, res) => {
               totalSpent: 0,
               eventsPurchased: 0,
               ticketsPurchased: 0,
-              marketingOptIn
+              marketingOptIn: row.marketingOptIn === 'true' || row.marketingOptIn === true
             });
             inserted.push({ type: 'user', email });
           } catch (err) {
@@ -128,7 +129,7 @@ export const importCSVData = async (req, res) => {
         continue;
       }
 
-      // ✅ Handle multiple ticket types per booking
+      // ✅ Handle Booking & Multiple Tickets
       if (shouldRunBooking && bookingId && row.eventName && !isNaN(quantity)) {
         const eventName = clean(row.eventName);
         const ticketType = clean(row.ticketType);
@@ -162,36 +163,48 @@ export const importCSVData = async (req, res) => {
           updated.push({ type: 'booking', bookingId });
         }
 
-        const tickets = Array.from({ length: quantity }, (_, i) => ({
-          ticketCode: `TIX-${bookingId}-${ticketType}-${i + 1}-${nanoid(6)}`,
-          bookingId: booking._id,
-          user: user._id,
-          eventName,
-          ticketType,
-          ticketPrice: price,
-          qrCode: `QR-${bookingId}-${ticketType}-${i + 1}-${nanoid(4)}`
-        }));
+        const tickets = [];
 
-        const savedTickets = await Ticket.insertMany(tickets);
+        for (let i = 0; i < quantity; i++) {
+          const rawCode = clean(row.ticketCode) || `TIX-${bookingId}-${ticketType}-${i + 1}-${nanoid(6)}`;
+          const exists = await Ticket.findOne({ ticketCode: rawCode });
+          if (exists) {
+            skipped.push({ reason: 'Duplicate ticketCode', ticketCode: rawCode });
+            continue;
+          }
 
-        booking.tickets.push(...savedTickets.map(t => t._id));
-        booking.totalPaid += price * quantity;
-        booking.quantity += quantity;
-        await booking.save();
+          tickets.push({
+            ticketCode: rawCode,
+            bookingId: booking._id,
+            user: user._id,
+            eventName,
+            ticketType,
+            ticketPrice: price,
+            qrCode: `QR-${bookingId}-${ticketType}-${i + 1}-${nanoid(4)}`
+          });
+        }
 
-        await User.updateOne({ _id: user._id }, {
-          $inc: {
-            totalSpent: price * quantity,
-            eventsPurchased: 1,
-            ticketsPurchased: quantity
-          },
-          $set: { lastActivity: new Date() }
-        });
+        if (tickets.length > 0) {
+          const savedTickets = await Ticket.insertMany(tickets);
+          booking.tickets.push(...savedTickets.map(t => t._id));
+          booking.totalPaid += price * tickets.length;
+          booking.quantity += tickets.length;
+          await booking.save();
+
+          await User.updateOne({ _id: user._id }, {
+            $inc: {
+              totalSpent: price * tickets.length,
+              eventsPurchased: 1,
+              ticketsPurchased: tickets.length
+            },
+            $set: { lastActivity: new Date() }
+          });
+        }
       } else if (shouldRunBooking) {
         skipped.push({ reason: 'Missing booking fields', row });
       }
 
-      // 💳 Payment section
+      // 💳 Payment
       if (shouldRunPayment && bookingId && !isNaN(amount) && transactionDate) {
         const booking = await Booking.findOne({ bookingId });
         if (!booking) {
