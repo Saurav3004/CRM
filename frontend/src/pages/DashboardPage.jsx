@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ExportModal from '../components/ExportContact';
+import DashboardCharts from '../components/DashboardCharts';
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
@@ -99,6 +100,7 @@ const Dashboard = () => {
 
         {showExport && <ExportModal isOpen={showExport} onClose={() => setShowExport(false)} />}
       </div>
+      <DashboardCharts chartData={data.chartData} />
     </div>
   );
 };

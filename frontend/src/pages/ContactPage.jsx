@@ -86,6 +86,12 @@ const ContactPage = () => {
           >
             <Plus size={16} /> Add Column
           </button>
+          <button
+            onClick = {() => navigate("/integration")}
+            className="flex items-center gap-2 bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800"
+          >
+             Integration
+          </button>
         </div>
       </div>
 

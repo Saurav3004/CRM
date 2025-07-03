@@ -7,6 +7,7 @@ import importRouter from './routes/importRoute.js'
 import bookingRouter from './routes/bookingRoute.js'
 import dashboardRoutes from './routes/dashboardRoute.js'
 import exportRoutes from './routes/exportRoute.js'
+import integrateRoutes from './routes/integrationRoute.js'
 
 const app = express();
 app.use(cors())
@@ -20,6 +21,7 @@ app.use("/api/import",importRouter)
 app.use("/api/booking",bookingRouter)
 app.use('/api/dashboard', dashboardRoutes);
 app.use("/api/export",exportRoutes)
+app.use("/api/integrate/eventbrite",integrateRoutes)
 
 
 app.listen(3000,() => {
