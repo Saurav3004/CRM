@@ -4,6 +4,8 @@ import {
   eventbriteOAuthCallback,
   getEvents,
   syncEventData,
+  disconnectEventbrite,
+  checkEventbriteStatus,
 } from '../controllers/IntegrationController.js';
 
 const router = express.Router();
@@ -13,6 +15,9 @@ router.get('/callback', eventbriteOAuthCallback);
 // router.get('/my-organizers', getOrganizers);
 router.get('/organizer-events', getEvents);
 router.post('/sync-event', syncEventData);
+router.post('/disconnect', disconnectEventbrite);
+router.get('/status', checkEventbriteStatus);
+
 
 
 

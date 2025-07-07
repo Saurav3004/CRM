@@ -19,6 +19,7 @@ export const getAllUsersWithDetails = async (req, res) => {
         totalSpent: user.totalSpent || 0,
         totalTicketsPurchased,
         totalUniqueEvents: uniqueEvents,
+        marketing: user.marketingOptIn ?? false
       };
     }));
 
