@@ -73,12 +73,12 @@ const CampaignPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2">
             <div className="p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg">
               <span className="text-white text-2xl">🎯</span>
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Campaign Builder
             </h1>
           </div>
@@ -150,22 +150,22 @@ const CampaignPage = () => {
             
             <button
               onClick={addFilter}
-              className="w-full p-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+              className="w-44 p-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-1 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
             >
-              <span className="text-lg">➕</span>
+              <span className="text-sm">➕</span>
               Add New Filter
             </button>
           </div>
         </div>
 
         {/* Summary Section */}
-        <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-white/20 mb-8">
+        <div className="bg-white/80 backdrop-blur-sm p-5 rounded-2xl shadow-lg border border-white/20 mb-8">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
-                <span className="text-white text-xl">👥</span>
+                <span className="text-white text-sm">👥</span>
               </div>
-              <div>
+              <div className="flex items-center justify-center gap-2">
                 <p className="text-2xl font-bold text-gray-800">
                   {filteredUsers.length.toLocaleString()}
                 </p>
@@ -176,7 +176,7 @@ const CampaignPage = () => {
             {filteredUsers.length > 0 && (
               <button
                 onClick={() => setShowMarketingModal(true)}
-                className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                className="px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
               >
                 <span className="text-lg">📤</span>
                 Send Campaign

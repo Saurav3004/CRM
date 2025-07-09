@@ -11,7 +11,11 @@ const bookingSchema = new mongoose.Schema({
   totalPaid:{type:Number,default:0},
   bookedDate: Date,
   source: String,
-  tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' }]
+  tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' }],
+  eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
+ 
+
+
 }, { timestamps: true });
 
 

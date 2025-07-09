@@ -73,7 +73,7 @@ console.log(data)
           <div><strong>Event:</strong> {booking.eventName}</div>
           <div><strong>Venue:</strong> {booking.venue}</div>
           <div><strong>Booked Date:</strong> {formatDate(booking.bookedDate)}</div>
-          <div><strong>Total Tickets:</strong> {booking.quantity}</div>
+          <div><strong>Total Tickets:</strong> {tickets.length}</div>
           <div><strong>Total Paid:</strong> {data.payments.map((payment) => payment.currency)} {total.toFixed(2)}</div>
         </div>
       </div>

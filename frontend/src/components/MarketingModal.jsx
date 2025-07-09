@@ -106,9 +106,9 @@ const MarketingModal = ({ users, onClose }) => {
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+              className="px-3 py-3 hover:bg-gray-100 rounded-lg transition-colors duration-200"
             >
-              <span className="text-2xl text-gray-400 hover:text-gray-600">×</span>
+              <span className="text-xl  text-gray-400 hover:text-gray-600">x</span>
             </button>
           </div>
           

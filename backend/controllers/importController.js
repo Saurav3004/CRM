@@ -2,6 +2,7 @@ import { User } from '../models/userModel.js';
 import { Booking } from '../models/bookingModel.js';
 import { Payment } from '../models/paymentModel.js';
 import { Ticket } from '../models/ticketModel.js';
+import { Event } from '../models/eventModel.js';
 import { parse, isValid } from 'date-fns';
 import { nanoid } from 'nanoid';
 
@@ -29,16 +30,10 @@ const detectType = (headers) => {
   const hasBookingFields = lower.includes('bookingid') && lower.includes('eventname');
   const hasPaymentFields = (lower.includes('paymentid') || lower.includes('amount') || lower.includes('method')) && lower.includes('bookingid');
 
-  const hasBookingOnly = hasBookingFields && !hasUser && !hasPaymentFields;
-  const hasPaymentOnly = hasPaymentFields && !hasUser && !hasBookingFields;
-  const hasUserOnly = hasUser && !hasBookingFields && !hasPaymentFields;
-
-  if (hasUserOnly) return 'user';
-  if (hasBookingOnly) return 'booking';
-  if (hasPaymentOnly) return 'payment';
-  if ((hasUser && hasBookingFields) || (hasUser && hasPaymentFields) || (hasBookingFields && hasPaymentFields)) return 'mixed';
-
-  return 'unknown';
+  if (hasUser && !hasBookingFields && !hasPaymentFields) return 'user';
+  if (hasBookingFields && !hasUser && !hasPaymentFields) return 'booking';
+  if (hasPaymentFields && !hasUser && !hasBookingFields) return 'payment';
+  return 'mixed';
 };
 
 export const importCSVData = async (req, res) => {
@@ -54,8 +49,6 @@ export const importCSVData = async (req, res) => {
       const headers = Object.keys(rows[0]);
       importType = detectType(headers);
     }
-
-    console.log('📥 Import type detected:', importType);
 
     const inserted = [], updated = [], skipped = [];
 
@@ -73,55 +66,46 @@ export const importCSVData = async (req, res) => {
 
       let user = email ? await User.findOne({ email }) : null;
 
-      // 👉 Create User if Needed
-      if (shouldRunUser && email) {
-        if (!user) {
-          try {
-            const dob = parseDate(row.dob);
-            user = await User.create({
-              firstName: clean(row.firstName || 'Unknown'),
-              lastName: clean(row.lastName),
-              email,
-              mobile: clean(row.mobile),
-              dob,
-              gender: clean(row.gender),
-              city: clean(row.city),
-              state: clean(row.state),
-              country: clean(row.country),
-              socialMedia: {
-                instagram: clean(row['socialMedia.instagram']),
-                tiktok: clean(row['socialMedia.tiktok']),
-                spotify: clean(row['socialMedia.spotify']),
-              },
-              totalSpent: 0,
-              eventsPurchased: 0,
-              ticketsPurchased: 0,
-              marketingOptIn: row.marketingOptIn === 'true' || row.marketingOptIn === true
-            });
-            inserted.push({ type: 'user', email });
-          } catch (err) {
-            skipped.push({ reason: 'User creation failed: ' + err.message, row });
-            continue;
-          }
-        } else {
-          updated.push({ type: 'user', email });
+      // Create user if needed
+      if (shouldRunUser && email && !user) {
+        try {
+          const dob = parseDate(row.dob);
+          user = await User.create({
+            firstName: clean(row.firstName || 'Unknown'),
+            lastName: clean(row.lastName),
+            email,
+            mobile: clean(row.mobile),
+            dob,
+            gender: clean(row.gender),
+            city: clean(row.city),
+            state: clean(row.state),
+            country: clean(row.country),
+            socialMedia: {
+              instagram: clean(row['socialMedia.instagram']),
+              tiktok: clean(row['socialMedia.tiktok']),
+              spotify: clean(row['socialMedia.spotify']),
+            },
+            totalSpent: 0,
+            eventsPurchased: 0,
+            ticketsPurchased: 0,
+            marketingOptIn: row.marketingOptIn === 'true' || row.marketingOptIn === true
+          });
+          inserted.push({ type: 'user', email });
+        } catch (err) {
+          skipped.push({ reason: 'User creation failed: ' + err.message, row });
+          continue;
         }
       }
 
       if (!user && (shouldRunBooking || shouldRunPayment) && email) {
-        try {
-          user = await User.create({
-            email,
-            firstName: clean(row.firstName || 'Unknown'),
-            totalSpent: 0,
-            eventsPurchased: 0,
-            ticketsPurchased: 0
-          });
-          inserted.push({ type: 'user-auto', email });
-        } catch {
-          skipped.push({ reason: 'Auto user creation failed', row });
-          continue;
-        }
+        user = await User.create({
+          email,
+          firstName: clean(row.firstName || 'Unknown'),
+          totalSpent: 0,
+          eventsPurchased: 0,
+          ticketsPurchased: 0
+        });
+        inserted.push({ type: 'user-auto', email });
       }
 
       if (!user) {
@@ -129,11 +113,27 @@ export const importCSVData = async (req, res) => {
         continue;
       }
 
-      // ✅ Handle Booking & Multiple Tickets
+      // BOOKING + EVENT
       if (shouldRunBooking && bookingId && row.eventName && !isNaN(quantity)) {
         const eventName = clean(row.eventName);
         const ticketType = clean(row.ticketType);
         const bookedDate = parseDate(row.bookedDate) || new Date();
+
+        // 🎯 Event Auto Create/Fetch
+        let event = await Event.findOne({ name: eventName });
+        if (!event) {
+          event = await Event.create({
+            name: eventName,
+            startDate: parseDate(row.eventStartDate) || null,
+            endDate: parseDate(row.eventEndDate) || null,
+            venue: clean(row.venue),
+            city: clean(row.city),
+            source: 'CSV',
+            totalRevenue: 0,
+            ticketsSold: 0
+          });
+          inserted.push({ type: 'event', name: eventName });
+        }
 
         if (price === 0 && totalPaid && quantity > 0) {
           price = totalPaid / quantity;
@@ -151,6 +151,7 @@ export const importCSVData = async (req, res) => {
             bookingId,
             user: user._id,
             eventName,
+            eventId: event._id,
             venue: clean(row.venue),
             bookedDate,
             source: clean(row.source || 'CSV'),
@@ -163,6 +164,7 @@ export const importCSVData = async (req, res) => {
           updated.push({ type: 'booking', bookingId });
         }
 
+        // Create Tickets
         const tickets = [];
 
         for (let i = 0; i < quantity; i++) {
@@ -177,6 +179,7 @@ export const importCSVData = async (req, res) => {
             ticketCode: rawCode,
             bookingId: booking._id,
             user: user._id,
+            eventId: event._id, // ✅ added here
             eventName,
             ticketType,
             ticketPrice: price,
@@ -199,9 +202,14 @@ export const importCSVData = async (req, res) => {
             },
             $set: { lastActivity: new Date() }
           });
+
+          await Event.updateOne({ _id: event._id }, {
+            $inc: {
+              totalRevenue: price * tickets.length,
+              ticketsSold: tickets.length
+            }
+          });
         }
-      } else if (shouldRunBooking) {
-        skipped.push({ reason: 'Missing booking fields', row });
       }
 
       // 💳 Payment
@@ -235,12 +243,10 @@ export const importCSVData = async (req, res) => {
         } else {
           updated.push({ type: 'payment', paymentId });
         }
-      } else if (shouldRunPayment) {
-        skipped.push({ reason: 'Invalid or missing payment fields', row });
       }
     }
 
-    return res.status(200).json({
+    res.status(200).json({
       message: `${inserted.length + updated.length} records processed.`,
       insertedCount: inserted.length,
       updatedCount: updated.length,

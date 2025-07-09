@@ -329,10 +329,13 @@ const EventbriteIntegration = () => {
           </div>
         )}
 
+        
+
         {/* Integration Info */}
         <div className="bg-gradient-to-r from-purple-600 to-orange-500 rounded-2xl p-8 text-white">
           <div className="flex items-center justify-between">
             <div>
+              
               <h3 className="text-xl font-bold mb-2">Integration Benefits</h3>
               <ul className="space-y-2 text-purple-100">
                 <li className="flex items-center space-x-2">

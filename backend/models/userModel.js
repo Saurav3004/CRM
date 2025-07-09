@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
   },
   marketingOptIn:{
     type:Boolean,
-    default:false
+    default:true
   },
   totalSpent: { type: Number, default: 0 },
   eventsPurchased: { type: Number, default: 0 },

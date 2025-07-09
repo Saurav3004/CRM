@@ -10,14 +10,15 @@ const fieldMap = {
   mobile: 'user.mobile',
   gender: 'user.gender',
   dob: 'user.dob',
-  totalSpent: 'user.totalSpent',
 
   eventName: 'booking.eventName',
   quantity: 'booking.quantity',
   bookedDate: 'booking.bookedDate',
   venue: 'booking.venue',
+  source: 'booking.source',
 
-  amount: 'payment.amount',
+  ticketPrice: 'booking.ticketPrice',  // virtual field
+  amount: 'payment.amount',            // will map to booking.totalPaid
   method: 'payment.method',
   currency: 'payment.currency',
   status: 'payment.status',
@@ -32,15 +33,17 @@ export const exportData = async (req, res) => {
       return res.status(400).json({ message: "No fields selected for export." });
     }
 
-    // Map fields and filters
     const mappedFields = fields.map(f => fieldMap[f] || f);
+
     const mappedFilters = {};
     for (const key in filters) {
       const mappedKey = fieldMap[key] || key;
-      mappedFilters[mappedKey] = filters[key];
+      if (filters[key]) {
+        mappedFilters[mappedKey] = filters[key];
+      }
     }
 
-    // Build MongoDB query for payments
+    // Build MongoDB query for payment filters
     const mongoQuery = {};
     for (const f in mappedFilters) {
       if (f.startsWith('payment.')) {
@@ -48,7 +51,6 @@ export const exportData = async (req, res) => {
       }
     }
 
-    // Fetch and populate
     const payments = await Payment.find(mongoQuery)
       .populate('user')
       .populate('booking')
@@ -65,23 +67,47 @@ export const exportData = async (req, res) => {
 
       for (const f in mappedFilters) {
         const [group, key] = f.split(".");
-        const val = (group === 'user' ? user[key] : group === 'booking' ? booking[key] : payment[key]);
+        const val =
+          group === 'user' ? user[key]
+          : group === 'booking' ? booking[key]
+          : payment[key];
+
         if (val !== mappedFilters[f]) {
           matches = false;
           break;
         }
       }
+
       if (matches) {
         mappedFields.forEach(f => {
-          const [group, key] = f.split(".");
-          row[f] = (group === 'user' ? user[key] : group === 'booking' ? booking[key] : payment[key]);
+          if (f === 'payment.amount') {
+            // Override with booking.totalPaid
+            row[f] = booking.totalPaid ?? payment.amount ?? '';
+          } else if (f === 'booking.ticketPrice') {
+            // Calculate price per ticket
+            row[f] =
+              typeof booking.totalPaid === 'number' &&
+              typeof booking.quantity === 'number' &&
+              booking.quantity !== 0
+                ? (booking.totalPaid / booking.quantity).toFixed(2)
+                : '';
+          } else {
+            const [group, key] = f.split('.');
+            row[f] =
+              group === 'user'
+                ? user[key]
+                : group === 'booking'
+                ? booking[key]
+                : payment[key];
+          }
         });
+
         combined.push(row);
       }
     }
 
     if (combined.length === 0) {
-     return res.json({message:"No data exported"})
+      return res.json({ message: "No data exported" });
     }
 
     const parser = new Parser({ fields: mappedFields });

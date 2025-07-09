@@ -13,6 +13,7 @@ const fieldMap = {
   ticketPrice: 'booking.ticketPrice',
   quantity: 'booking.quantity',
   bookedDate: 'booking.bookedDate',
+  source: 'booking.source',
 
   paymentId: 'payment.paymentId',
   amount: 'payment.amount',
@@ -24,7 +25,7 @@ const fieldMap = {
 
 const allFields = {
   user: ['firstName', 'lastName', 'email', 'mobile', 'dob', 'gender'],
-  booking: ['eventName', 'ticketType', 'ticketPrice', 'quantity', 'bookedDate'],
+  booking: ['eventName', 'ticketType', 'ticketPrice', 'quantity', 'bookedDate','source'],
   payment: ['paymentId', 'amount', 'method', 'status', 'transactionDate', 'currency']
 };
 
@@ -95,12 +96,12 @@ const ExportModal = ({ isOpen, onClose }) => {
 
     const mappedFields = selectedFields.map((f) => fieldMap[f] || f);
     const mappedFilters = {};
-    for (const key in filters) {
-      const mappedKey = fieldMap[key] || key;
-      if (filters[key]) {
-        mappedFilters[mappedKey] = filters[key];
-      }
-    }
+for (const key in filters) {
+  if (filters[key]) {
+    mappedFilters[key] = filters[key];
+  }
+}
+
 
     setLoading(true);
     try {
