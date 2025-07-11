@@ -27,7 +27,6 @@ const UserProfile = () => {
     
   }, [id]);
 
-  console.log(user)
   const formatDate = (date) => {
     if(!date) return 'Not Provided';
     const d = new Date(date);
@@ -115,7 +114,7 @@ const UserProfile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-gray-600">
                 <div className="flex items-center space-x-2"><Mail className="w-4 h-4" /><span>{user.email}</span></div>
                 <div className="flex items-center space-x-2"><Phone className="w-4 h-4" /><span>{user.mobile || 'Not provided'}</span></div>
-                <div className="flex items-center space-x-2"><MapPin className="w-4 h-4" /><span>{[user.city, user.state, user.country].filter(Boolean).join(', ')}</span></div>
+                <div className="flex items-center space-x-2"><MapPin className="w-4 h-4" /><span>{[user.city, user.state, user.country].filter(Boolean).join(', ') || 'Not Provided'}</span></div>
                 <div className="flex items-center space-x-2"><Calendar className="w-4 h-4" /><span>{formatDate(user.dob)}</span></div>
                 <div className="flex items-center space-x-2"><Cake className="w-4 h-4" /><span>Age: {calculateAge(user.dob)}</span></div>
                 <div className="flex items-center space-x-2"><Users className="w-4 h-4" /><span>{formatGender(user.gender)}</span></div>

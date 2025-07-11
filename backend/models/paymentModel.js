@@ -7,6 +7,8 @@ const paymentSchema = new mongoose.Schema({
   amount: Number,
   method: String,
   status: String,
+  basePrice:Number,
+  eventbriteFee: Number,
   transactionDate: Date,
   currency:String
 }, { timestamps: true });
