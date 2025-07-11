@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import MarketingModal from "../components/MarketingModal";
+import { BACKEND_URI } from "../utils";
+
+const VITE_API = import.meta.env.VITE_API_URL
 
 const FILTER_OPTIONS = [
   { label: "City", key: "city", type: "text" },
@@ -21,7 +24,7 @@ const CampaignPage = () => {
   const [showMarketingModal, setShowMarketingModal] = useState(false);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/api/user/allusers").then((res) => {
+    axios.get(`${VITE_API}/api/user/allusers`).then((res) => {
       setAllUsers(res.data.users || []);
     });
   }, []);

@@ -4,10 +4,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 const AgeChart = () => {
   const [data, setData] = useState([]);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchAges = async () => {
-      const { data } = await axios.get('http://localhost:3000/api/dashboard/age-distribution');
+      const { data } = await axios.get(`${VITE_API}/api/dashboard/age-distribution`);
       console.log(data)
       const formatted = Object.entries(data).map(([group, count]) => ({ group, count }));
       setData(formatted);

@@ -219,11 +219,12 @@ import ExportModal from '../components/ExportContact'
 const Dashboard = () => {
   const [kpis, setKpis] = useState(null);
   const [showExport,setShowExport] = useState(false)
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchKPIs = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3000/api/dashboard/kpis');
+        const { data } = await axios.get(`${VITE_API}/api/dashboard/kpis`);
         setKpis(data);
       } catch (err) {
         console.error('Failed to fetch KPIs', err);
@@ -261,7 +262,7 @@ const Dashboard = () => {
       <KPICard icon="💰" label="Total Revenue" value={`AUD ${kpis.totalRevenue}`} gradient="from-green-600 to-teal-600" />
       <KPICard icon="⏳" label="Pending Payments" value={`AUD ${kpis.pendingPayments}`} gradient="from-red-500 to-rose-600" />
       <KPICard icon="🚀" label="Running Campaigns" value={kpis.campaignsRunning} gradient="from-blue-500 to-cyan-500" />
-      <KPICard icon="📈" label="Conversion Rate" value={`${kpis.conversionRate.toFixed(1)}%`} gradient="from-sky-500 to-blue-600" />
+      <KPICard icon="📈" label="Conversion Rate" value={`${kpis.conversionRate?.toFixed(1)}%`} gradient="from-sky-500 to-blue-600" />
     </div>
     <DashboardRecent />
     <TopEvents />

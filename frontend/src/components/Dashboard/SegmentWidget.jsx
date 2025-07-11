@@ -3,10 +3,11 @@ import axios from 'axios';
 
 const SegmentsWidget = () => {
   const [segments, setSegments] = useState(null);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchSegments = async () => {
-      const { data } = await axios.get('http://localhost:3000/api/dashboard/segments');
+      const { data } = await axios.get(`${VITE_API}/api/dashboard/segments`);
       setSegments(data);
     };
     fetchSegments();
@@ -19,7 +20,7 @@ const SegmentsWidget = () => {
       <div className="bg-white rounded-xl shadow p-4">
         <h3 className="font-bold mb-2">📍 Top Cities</h3>
         <ul>
-          {segments.byCity.map(city => (
+          {segments?.byCity?.map(city => (
             <li key={city._id}>{city._id || 'Unknown'} – {city.count}</li>
           ))}
         </ul>
@@ -28,7 +29,7 @@ const SegmentsWidget = () => {
       <div className="bg-white rounded-xl shadow p-4">
         <h3 className="font-bold mb-2">🚻 Gender</h3>
         <ul>
-          {segments.byGender.map(g => (
+          {segments?.byGender?.map(g => (
             <li key={g._id}>{g._id || 'Unspecified'} – {g.count}</li>
           ))}
         </ul>
@@ -37,7 +38,7 @@ const SegmentsWidget = () => {
       <div className="bg-white rounded-xl shadow p-4">
         <h3 className="font-bold mb-2">📬 Marketing Opt-In</h3>
         <ul>
-          {segments.marketingOptIn.map(opt => (
+          {segments?.marketingOptIn?.map(opt => (
             <li key={opt._id}>{opt._id ? 'Yes' : 'No'} – {opt.count}</li>
           ))}
         </ul>

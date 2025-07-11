@@ -4,11 +4,12 @@ import axios from 'axios';
 const SpenderInsights = () => {
   const [topUser, setTopUser] = useState(null);
   const [topCities, setTopCities] = useState([]);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchSpenders = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3000/api/dashboard/spender-insights');
+        const { data } = await axios.get(`${VITE_API}/api/dashboard/spender-insights`);
         console.log(data)
         setTopUser(data.topUser);
         setTopCities(data.topCities);
@@ -40,7 +41,7 @@ const SpenderInsights = () => {
       <div className="bg-white shadow-lg rounded-xl p-6">
         <h3 className="text-xl font-semibold mb-4">🏙️ Top Cities by Revenue</h3>
         <ul className="space-y-2">
-          {topCities.map((city, i) => (
+          {topCities?.map((city, i) => (
             <li key={i} className="flex justify-between text-sm border-b pb-1">
               <span>{city._id || 'Unknown'}</span>
               <span className="text-green-700 font-medium">AUD {city.totalSpent.toFixed(0)}</span>

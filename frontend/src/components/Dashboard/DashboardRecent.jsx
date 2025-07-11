@@ -3,11 +3,12 @@ import axios from 'axios';
 
 const DashboardRecent = () => {
   const [recent, setRecent] = useState({ recentUsers: [], recentBookings: [] });
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchRecent = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3000/api/dashboard/recent');
+        const { data } = await axios.get(`${VITE_API}/api/dashboard/recent`);
         setRecent(data);
       } catch (err) {
         console.error('Failed to fetch recent data:', err);

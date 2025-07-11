@@ -52,6 +52,7 @@ const ExportModal = ({ isOpen, onClose }) => {
   const [selectedFields, setSelectedFields] = useState([]);
   const [filters, setFilters] = useState({});
   const [loading, setLoading] = useState(false);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -105,7 +106,7 @@ for (const key in filters) {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/export/data', {
+      const response = await fetch(`${VITE_API}/api/export/data`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -10,10 +10,11 @@ const UserProfile = () => {
   const { id } = useParams();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   const fetchUserDetails = async () => {
     try {
-      const res = await axios.get(`http://localhost:3000/api/user/${id}`);
+      const res = await axios.get(`${VITE_API}/api/user/${id}`);
       setUser(res.data.user);
     } catch (error) {
       console.error('Failed to fetch user', error);

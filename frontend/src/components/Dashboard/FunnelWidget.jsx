@@ -3,10 +3,11 @@ import axios from 'axios';
 
 const FunnelWidget = () => {
   const [funnel, setFunnel] = useState(null);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchFunnel = async () => {
-      const { data } = await axios.get('http://localhost:3000/api/dashboard/funnel');
+      const { data } = await axios.get(`${VITE_API}/api/dashboard/funnel`);
       setFunnel(data);
     };
     fetchFunnel();

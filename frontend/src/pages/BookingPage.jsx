@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
+const VITE_API = import.meta.env.VITE_API_URL
+
 const BookingDetails = () => {
   const { bookingId } = useParams();
   const [data, setData] = useState(null);
@@ -15,7 +17,7 @@ const BookingDetails = () => {
   const [maxPrice, setMaxPrice] = useState('');
 
   useEffect(() => {
-    axios.get(`http://localhost:3000/api/booking/${bookingId}`)
+    axios.get(`${VITE_API}/api/booking/${bookingId}`)
       .then(res => setData(res.data))
       .catch(err => console.error('Failed to fetch booking:', err));
   }, [bookingId]);

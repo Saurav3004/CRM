@@ -6,6 +6,7 @@ const MarketingModal = ({ users, onClose }) => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   const handleSend = async () => {
     if (!message.trim()) {
@@ -21,7 +22,7 @@ const MarketingModal = ({ users, onClose }) => {
     setLoading(true);
     try {
       const userIds = users.map(u => u._id);
-      await axios.post('http://localhost:3000/api/marketing/send', {
+      await axios.post(`${VITE_API}/api/marketing/send`, {
         userIds,
         channel,
         message,

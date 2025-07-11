@@ -64,10 +64,11 @@ import {
 
 const TrendChart = () => {
   const [data, setData] = useState([]);
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchTrends = async () => {
-      const { data } = await axios.get('http://localhost:3000/api/dashboard/trends');
+      const { data } = await axios.get(`${VITE_API}/api/dashboard/trends`);
       setData(data);
     };
     fetchTrends();

@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import ImportDataModal from "../components/ImportContact";
 import ColumnSelectorModal from "../components/ColumnSelectorModal";
 import MarketingModal from "../components/MarketingModal";
+import { BACKEND_URI } from "../utils";
 
 const ALL_FIELDS = [
   { key: "firstName", label: "First Name", icon: Users },
@@ -58,13 +59,15 @@ const ContactPage = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showMarketingModal, setShowMarketingModal] = useState(false);
+  const VITE_API = import.meta.env.VITE_API_URL
+
 
   const navigate = useNavigate();
 
   const fetchUsers = async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
-      const response = await axios.get("http://localhost:3000/api/user/allusers");
+      const response = await axios.get(`${VITE_API}/api/user/allusers`);
       setUsers(response.data.users || []);
     } catch (error) {
       console.error("Error fetching users:", error);

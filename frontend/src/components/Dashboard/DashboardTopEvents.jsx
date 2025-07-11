@@ -3,11 +3,12 @@ import axios from 'axios';
 
 const TopEvents = () => {
   const [topEvents, setTopEvents] = useState({ topByTickets: [], topByRevenue: [] });
+  const VITE_API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
     const fetchTopEvents = async () => {
       try {
-        const { data } = await axios.get('http://localhost:3000/api/dashboard/top-events');
+        const { data } = await axios.get(`${VITE_API}/api/dashboard/top-events`);
         setTopEvents(data);
       } catch (err) {
         console.error('Failed to fetch top events', err);

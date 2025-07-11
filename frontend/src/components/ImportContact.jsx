@@ -11,6 +11,7 @@ const ImportDataModal = ({ isOpen, onClose, onSuccess }) => {
   const [uploadStep, setUploadStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [importType, setImportType] = useState("mixed");
+  const VITE_API = import.meta.env.VITE_API_URL
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -73,7 +74,7 @@ const ImportDataModal = ({ isOpen, onClose, onSuccess }) => {
 
     try {
       const res = await axios.post(
-        "http://localhost:3000/api/import/import-excel",
+        `${VITE_API}/api/import/import-excel`,
         formData
       );
       alert(res.data.message || "Import complete");

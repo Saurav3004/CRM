@@ -27,7 +27,8 @@ const EventbriteIntegration = () => {
   const [syncMessage, setSyncMessage] = useState('');
   const [syncingEventId, setSyncingEventId] = useState('');
   const [url, setUrl] = useState("");
-
+  const VITE_API = import.meta.env.VITE_API_URL
+  
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlUserId = params.get('userId');
@@ -36,7 +37,7 @@ const EventbriteIntegration = () => {
 
     if (resolvedUserId) {
       // Check if actually connected before setting
-      axios.get(`http://localhost:3000/api/integrate/eventbrite/status`, {
+      axios.get(`${VITE_API}/api/integrate/eventbrite/status`, {
         params: { userId: resolvedUserId }
       }).then((res) => {
         if (res.data.connected) {
@@ -58,7 +59,7 @@ const EventbriteIntegration = () => {
 
   const connectWithEventbrite = () => {
     window.open(
-      'http://localhost:3000/api/integrate/eventbrite/connect',
+      `${VITE_API}/api/integrate/eventbrite/connect`,
       'eventbritePopup',
       'width=600,height=700'
     );
@@ -66,7 +67,7 @@ const EventbriteIntegration = () => {
 
   const disconnect = async () => {
     try {
-      await axios.post('http://localhost:3000/api/integrate/eventbrite/disconnect', {
+      await axios.post(`${VITE_API}/api/integrate/eventbrite/disconnect`, {
         userId,
       });
 
@@ -87,7 +88,7 @@ const EventbriteIntegration = () => {
     setLoading(true);
     setSyncMessage('');
     try {
-      const res = await axios.get('http://localhost:3000/api/integrate/eventbrite/organizer-events', {
+      const res = await axios.get(`${VITE_API}/api/integrate/eventbrite/organizer-events`, {
         params: { userId: id }
       });
       setEvents(res.data.events || []);
@@ -103,7 +104,7 @@ const EventbriteIntegration = () => {
     setSyncingEventId(eventId);
     setSyncMessage('');
     try {
-      const res = await axios.post('http://localhost:3000/api/integrate/eventbrite/sync-event', {
+      const res = await axios.post(`${VITE_API}/api/integrate/eventbrite/sync-event`, {
         eventId,
         userId
       });
