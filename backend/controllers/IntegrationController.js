@@ -52,7 +52,7 @@ export const eventbriteOAuthCallback = async (req, res) => {
     );
 
     const accessToken = data.access_token;
-    console.log("[✅ OAuth Access Token Received]");
+    console.log("[✅ OAuth Access Token Received]",accessToken);
 
     // ✅ Fetch user info
     const { data: userInfo } = await axios.get(
@@ -560,13 +560,27 @@ export const syncEventData = async (req, res) => {
 
   try {
     const EB = await getEB(userId);
-    await wait(2000); // Prevent rate limit
 
-    const { data: attendeesData } = await EB.get(
-      `/events/${eventId}/attendees/?expand=order,event`
-    );
+    // 🔁 Fetch ALL attendees (with pagination)
+    const fetchAllAttendees = async () => {
+      let all = [];
+      let continuation = null;
 
-    const attendees = attendeesData?.attendees || [];
+      do {
+        const { data } = await EB.get(`/events/${eventId}/attendees/`, {
+          params: {
+            expand: "order,event",
+            ...(continuation ? { continuation } : {})
+          }
+        });
+        all.push(...data.attendees);
+        continuation = data.pagination.has_more_items ? data.pagination.continuation : null;
+      } while (continuation);
+
+      return all;
+    };
+
+    const attendees = await fetchAllAttendees();
     if (!attendees.length) {
       return res.status(200).json({ message: '✅ No attendees found for this event.' });
     }
@@ -576,20 +590,20 @@ export const syncEventData = async (req, res) => {
       return res.status(400).json({ message: '❌ Invalid event data.' });
     }
 
-    // 🏟 Fetch venue details
+    // 🎯 Get venue
     let venueData = {};
     if (rawEvent.venue_id) {
       try {
         const venueRes = await EB.get(`/venues/${rawEvent.venue_id}`);
         venueData = venueRes?.data || {};
-      } catch (e) {
-        console.warn('⚠️ Could not fetch venue:', e.message);
+      } catch (err) {
+        console.warn('⚠️ Venue fetch failed:', err.message);
       }
     }
 
     const eventName = rawEvent.name.text;
 
-    // 🔍 Ensure event exists
+    // 📦 Ensure event in DB
     let eventDoc = await Event.findOne({ name: eventName });
     if (!eventDoc) {
       eventDoc = await Event.create({
@@ -617,87 +631,73 @@ export const syncEventData = async (req, res) => {
       const ticketExists = await Ticket.findOne({ qrCode });
       if (ticketExists) continue;
 
-      // 🛡 Info requested fallback
-      let email = profile.email;
-      let firstName = profile.first_name;
-      let lastName = profile.last_name;
-      let gender = profile.gender || null;
-      let mobile = profile.cell_phone || null;
+      // 💡 Extract costs only once per booking
+      const orderGross = parseFloat(order.costs?.gross?.value || 0) / 100;
+      const basePrice = parseFloat(order.costs?.base_price?.value || 0) / 100;
+      const eventbriteFee = parseFloat(order.costs?.eventbrite_fee?.value || 0) / 100;
 
-      const infoMissing =
-        !email ||
-        email.toLowerCase().includes('info requested') ||
-        !firstName ||
-        firstName.toLowerCase().includes('info requested');
+      // 🧠 Decide buyer email
+      const buyerEmail = order.email?.toLowerCase();
+      const buyerName = order.first_name || 'Guest';
 
-      if (infoMissing) {
-        email = order.email || `fallback-${bookingId}-${attendeeId}@example.com`;
-        firstName = order.first_name || 'Guest';
-        lastName = order.last_name || 'User';
-        gender = null;
-        mobile = null;
+      let email = profile.email?.toLowerCase() || buyerEmail;
+      let firstName = profile.first_name || buyerName;
+      let lastName = profile.last_name || 'User';
+      const gender = profile.gender || null;
+      const mobile = profile.cell_phone || null;
+
+      const infoRequested = (
+        !email || email.includes('info requested') ||
+        !firstName || firstName.includes('info requested')
+      );
+
+      if (infoRequested && buyerEmail) {
+        email = buyerEmail;
+        firstName = buyerName;
+        lastName = 'User';
       }
 
-      // 📦 Extract city, state, country from answers only
-      let city = null;
-      let state = null;
-      let country = null;
-
-      if (attendee.answers && attendee.answers.length) {
+      // 🌐 Extra fields from answers
+      let city = null, state = null, country = null;
+      if (attendee.answers?.length) {
         for (const ans of attendee.answers) {
-          const question = ans.question?.toLowerCase?.() || '';
-          const value = ans.answer?.trim?.() || '';
-          if (question.includes('city')) city = value;
-          if (question.includes('state')) state = value;
-          if (question.includes('country')) country = value;
+          const q = ans.question?.toLowerCase?.() || '';
+          const a = ans.answer?.trim?.();
+          if (q.includes('city')) city = a;
+          if (q.includes('state')) state = a;
+          if (q.includes('country')) country = a;
         }
       }
 
-      // 👤 Create or update user
+      // 👤 Find/create user by email
       let user = await User.findOne({ email });
       if (!user) {
         user = await User.create({
-          firstName,
-          lastName,
-          email,
-          gender,
-          mobile,
-          city,
-          state,
-          country,
-          marketingOptIn: true,
+          firstName, lastName, email, gender, mobile,
+          city, state, country, marketingOptIn: true
         });
       } else {
-        await User.updateOne(
-          { _id: user._id },
-          {
-            $set: {
-              marketingOptIn: true,
-              ...(gender && { gender }),
-              ...(mobile && { mobile }),
-              ...(city && { city }),
-              ...(state && { state }),
-              ...(country && { country }),
-            },
+        await User.updateOne({ _id: user._id }, {
+          $set: {
+            marketingOptIn: true,
+            ...(gender && { gender }),
+            ...(mobile && { mobile }),
+            ...(city && { city }),
+            ...(state && { state }),
+            ...(country && { country }),
           }
-        );
+        });
       }
 
       const userIdStr = user._id.toString();
       const eventIdStr = eventDoc._id.toString();
-
       if (!userEventTracker.has(userIdStr)) {
         userEventTracker.set(userIdStr, new Set());
       }
 
       const alreadySynced = userEventTracker.get(userIdStr);
 
-      // 💰 Payment and pricing
-      const grossPrice = parseFloat(order.costs?.gross?.value || 0) / 100;
-      const basePrice = parseFloat(order.costs?.base_price?.value || 0) / 100;
-      const eventbriteFee = parseFloat(order.costs?.eventbrite_fee?.value || 0) / 100;
-
-      // 🧾 Booking
+      // 🎫 Booking (per buyer)
       let booking = await Booking.findOne({ bookingId });
       if (!booking) {
         const attendeesInOrder = attendees.filter(a => a.order_id === bookingId);
@@ -707,15 +707,24 @@ export const syncEventData = async (req, res) => {
           bookingId,
           user: user._id,
           eventName,
-          venue: venueData?.name || rawEvent?.venue?.name || '',
+          venue: venueData?.name || '',
           quantity,
-          totalPaid: grossPrice * quantity,
+          totalPaid: orderGross,
           bookedDate: new Date(attendee.created),
           source: 'eventbrite',
           tickets: [],
           eventId: eventDoc._id,
+          attendees: [], // 👈 store attendees too
         });
       }
+
+      // 👥 Store attendee info in booking
+      booking.attendees.push({
+        name: `${firstName} ${lastName}`,
+        email,
+        gender,
+        mobile
+      });
 
       // 🎟 Ticket
       const ticket = await Ticket.create({
@@ -723,7 +732,7 @@ export const syncEventData = async (req, res) => {
         bookingId: booking._id,
         user: user._id,
         eventName,
-        ticketPrice: grossPrice,
+        ticketPrice: orderGross / booking.quantity, // ✅ per ticket
         ticketType: attendee.ticket_class_name || 'General',
         qrCode,
         eventId: eventDoc._id,
@@ -732,14 +741,14 @@ export const syncEventData = async (req, res) => {
       booking.tickets.push(ticket._id);
       await booking.save();
 
-      // 💳 Payment
+      // 💳 Payment (once per booking)
       const paymentExists = await Payment.findOne({ paymentId: bookingId });
       if (!paymentExists) {
         await Payment.create({
           paymentId: bookingId,
           user: user._id,
           booking: booking._id,
-          amount: grossPrice,
+          amount: orderGross,
           method: attendee.payment?.method || 'unknown',
           status: attendee.status || 'completed',
           transactionDate: new Date(attendee.created),
@@ -749,15 +758,14 @@ export const syncEventData = async (req, res) => {
         });
       }
 
-      // 📈 Update user stats
+      // 📈 User stats
       const userUpdate = {
         $inc: {
-          totalSpent: grossPrice,
+          totalSpent: orderGross / booking.quantity,
           ticketsPurchased: 1,
         },
         $set: { lastActivity: new Date(attendee.created) },
       };
-
       if (!alreadySynced.has(eventIdStr)) {
         userUpdate.$inc.eventsPurchased = 1;
         alreadySynced.add(eventIdStr);
@@ -770,9 +778,9 @@ export const syncEventData = async (req, res) => {
         { _id: eventDoc._id },
         {
           $inc: {
-            totalRevenue: grossPrice,
+            totalRevenue: orderGross / booking.quantity,
             ticketsSold: 1,
-          },
+          }
         }
       );
 
@@ -781,14 +789,19 @@ export const syncEventData = async (req, res) => {
 
     res.status(200).json({
       message: `✅ Synced ${inserted} new attendees.`,
+      totalAttendeesFromEventbrite: attendees.length,
       eventId: eventDoc._id,
       eventName: eventDoc.name,
     });
+
   } catch (err) {
     console.error('❌ syncEventData error:', err?.response?.data || err.message);
     res.status(500).json({ message: 'Sync failed' });
   }
 };
+
+
+
 
 
 

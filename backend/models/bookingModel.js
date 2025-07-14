@@ -13,7 +13,7 @@ const bookingSchema = new mongoose.Schema({
   source: String,
   tickets: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Ticket' }],
   eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Event' },
- 
+  attendees: [{name:String,email:String}]
 
 
 }, { timestamps: true });
