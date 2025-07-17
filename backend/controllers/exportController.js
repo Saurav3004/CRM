@@ -11,6 +11,7 @@ const fieldMap = {
   gender: 'user.gender',
   dob: 'user.dob',
 
+  bookingId: 'booking.bookingId',
   eventName: 'booking.eventName',
   quantity: 'booking.quantity',
   bookedDate: 'booking.bookedDate',
@@ -28,6 +29,7 @@ const fieldMap = {
 export const exportData = async (req, res) => {
   try {
     let { fields = [], filters = {} } = req.body;
+    console.log(fields)
 
     if (!Array.isArray(fields) || fields.length === 0) {
       return res.status(400).json({ message: "No fields selected for export." });

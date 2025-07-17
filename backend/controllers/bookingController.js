@@ -25,10 +25,17 @@ export const getBookingDetails = async (req, res) => {
     });
 
     res.status(200).json({
-      booking,
-      tickets: filteredTickets,
-      payments
-    });
+  booking,
+  tickets: filteredTickets,
+  payments,
+  meta: {
+    buyerName: booking.user?.firstName + ' ' + booking.user?.lastName,
+    totalPaidByBuyer: booking.totalPaid,
+    totalTicketsInBooking: booking.quantity,
+    totalSpentByUserInBooking: filteredTickets.reduce((sum, t) => sum + (t.ticketPrice || 0), 0)
+  }
+});
+
   } catch (err) {
     console.error('❌ Error fetching booking details:', err);
     res.status(500).json({ message: 'Error fetching booking details' });

@@ -18,7 +18,10 @@ const BookingDetails = () => {
 
   useEffect(() => {
     axios.get(`${VITE_API}/api/booking/${bookingId}`)
-      .then(res => setData(res.data))
+      .then(res => {
+        setData(res.data)
+        console.log(res.data)
+      })
       .catch(err => console.error('Failed to fetch booking:', err));
   }, [bookingId]);
 
@@ -57,7 +60,7 @@ console.log(data)
 
   const { booking, tickets, payments } = data;
   const grouped = groupTickets(tickets);
-  const total = tickets.reduce((sum, t) => sum + t.ticketPrice, 0);
+  const total = data.payments.map((payment) => payment.amount)
 
   // For dropdown options
   const ticketTypes = [...new Set(tickets.map(t => t.ticketType))];
@@ -71,12 +74,16 @@ console.log(data)
       {/* Booking Info */}
       <div className="bg-white p-6 rounded-xl shadow">
         <h2 className="text-xl font-semibold mb-4">Booking Info</h2>
+        <p className="text-sm text-gray-500">Buyer: <strong>{data.meta?.buyerName || 'Unknown'}</strong></p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-lg">
           <div><strong>Event:</strong> {booking.eventName}</div>
           <div><strong>Venue:</strong> {booking.venue}</div>
           <div><strong>Booked Date:</strong> {formatDate(booking.bookedDate)}</div>
-          <div><strong>Total Tickets:</strong> {tickets.length}</div>
-          <div><strong>Total Paid:</strong> {data.payments.map((payment) => payment.currency)} {total.toFixed(2)}</div>
+          <div><strong>Total Tickets in Booking:</strong> {data.meta?.totalTicketsInBooking}</div>
+          <div><strong>Buyer Paid:</strong> {payments[0]?.currency || 'AUD'} {data.meta?.totalPaidByBuyer}</div>
+          <div><strong>Tickets Assigned to This User:</strong> {tickets.length}</div>
+          <div><strong>This User's Total Spend:</strong> {payments[0]?.currency || 'AUD'} {data.meta?.totalSpentByUserInBooking?.toFixed(2)}</div>
+
         </div>
       </div>
 

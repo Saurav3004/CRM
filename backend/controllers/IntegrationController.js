@@ -732,7 +732,7 @@ export const syncEventData = async (req, res) => {
         bookingId: booking._id,
         user: user._id,
         eventName,
-        ticketPrice: orderGross / booking.quantity, // ✅ per ticket
+        ticketPrice: parseFloat(attendee.costs?.base_price?.value || 0) / 100, // ✅ per ticket
         ticketType: attendee.ticket_class_name || 'General',
         qrCode,
         eventId: eventDoc._id,
@@ -799,18 +799,6 @@ export const syncEventData = async (req, res) => {
     res.status(500).json({ message: 'Sync failed' });
   }
 };
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 export const disconnectEventbrite = async (req, res) => {

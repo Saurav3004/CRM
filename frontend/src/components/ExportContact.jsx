@@ -8,6 +8,7 @@ const fieldMap = {
   dob: 'user.dob',
   gender: 'user.gender',
 
+  bookingId: 'booking.bookingId',
   eventName: 'booking.eventName',
   ticketType: 'booking.ticketType',
   ticketPrice: 'booking.ticketPrice',
@@ -25,7 +26,7 @@ const fieldMap = {
 
 const allFields = {
   user: ['firstName', 'lastName', 'email', 'mobile', 'dob', 'gender'],
-  booking: ['eventName', 'ticketType', 'ticketPrice', 'quantity', 'bookedDate','source'],
+  booking: ['eventName', 'ticketType', 'ticketPrice', 'quantity', 'bookedDate','source','bookingId'],
   payment: ['paymentId', 'amount', 'method', 'status', 'transactionDate', 'currency']
 };
 
@@ -116,6 +117,7 @@ for (const key in filters) {
           filters: mappedFilters
         })
       });
+
 
       if (!response.ok) {
         throw new Error('Export failed');

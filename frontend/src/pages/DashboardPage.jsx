@@ -268,7 +268,7 @@ const Dashboard = () => {
     <TopEvents />
     <SpenderInsights />
     <TrendChart />
-    <AgeChart />
+    <AgeChart /> 
     <SegmentsWidget />
     <FunnelWidget />
     </>
