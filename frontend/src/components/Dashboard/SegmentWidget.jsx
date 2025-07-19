@@ -9,6 +9,7 @@ const SegmentsWidget = () => {
     const fetchSegments = async () => {
       const { data } = await axios.get(`${VITE_API}/api/dashboard/segments`);
       setSegments(data);
+      console.log("segments",data)
     };
     fetchSegments();
   }, []);

@@ -3,7 +3,7 @@ import { Event } from "../models/eventModel.js";
 import { Booking } from "../models/bookingModel.js";
 import { Campaign } from "../models/campaignModel.js";
 import { Payment } from "../models/paymentModel.js";
-import { differenceInYears } from 'date-fns';
+import { differenceInYears } from "date-fns";
 
 export const getDashboardKPIs = async (req, res) => {
   try {
@@ -76,13 +76,11 @@ export const getRecentData = async (req, res) => {
       recentUsers,
       recentBookings,
     });
-
   } catch (err) {
     console.error("❌ Recent Fetch Error:", err);
     res.status(500).json({ error: "Failed to fetch recent data" });
   }
 };
-
 
 export const getTopEvents = async (req, res) => {
   try {
@@ -116,35 +114,34 @@ export const getTopEvents = async (req, res) => {
   }
 };
 
-
 // 🧮 Spender Insights Controller
 export const getSpenderInsights = async (req, res) => {
   try {
     // 🔝 Top Paying User
     const topUser = await User.findOne()
       .sort({ totalSpent: -1 })
-      .select('firstName lastName email totalSpent city');
+      .select("firstName lastName email totalSpent city");
 
     // 🏙️ Top Cities by Revenue
     const topCities = await User.aggregate([
       {
         $group: {
-          _id: '$city',
-          totalSpent: { $sum: '$totalSpent' },
-          users: { $sum: 1 }
-        }
+          _id: "$city",
+          totalSpent: { $sum: "$totalSpent" },
+          users: { $sum: 1 },
+        },
       },
       { $sort: { totalSpent: -1 } },
-      { $limit: 5 }
+      { $limit: 5 },
     ]);
 
     res.status(200).json({
       topUser,
-      topCities
+      topCities,
     });
   } catch (err) {
-    console.error('❌ getSpenderInsights error:', err);
-    res.status(500).json({ error: 'Failed to fetch spender insights' });
+    console.error("❌ getSpenderInsights error:", err);
+    res.status(500).json({ error: "Failed to fetch spender insights" });
   }
 };
 
@@ -157,37 +154,37 @@ export const getTrendsData = async (req, res) => {
     const trends = await Booking.aggregate([
       {
         $match: {
-          createdAt: { $gte: sixMonthsAgo }
-        }
+          createdAt: { $gte: sixMonthsAgo },
+        },
       },
       {
         $group: {
           _id: {
             month: { $month: "$createdAt" },
-            year: { $year: "$createdAt" }
+            year: { $year: "$createdAt" },
           },
           bookings: { $sum: 1 },
           tickets: { $sum: "$quantity" },
-          revenue: { $sum: "$totalPaid" }
-        }
+          revenue: { $sum: "$totalPaid" },
+        },
       },
       {
         $sort: {
           "_id.year": 1,
-          "_id.month": 1
-        }
-      }
+          "_id.month": 1,
+        },
+      },
     ]);
 
     // Convert month numbers to names
     const result = trends.map((t) => {
       const date = new Date(t._id.year, t._id.month - 1);
-      const month = date.toLocaleString('default', { month: 'short' });
+      const month = date.toLocaleString("default", { month: "short" });
       return {
         month,
         bookings: t.bookings,
         tickets: t.tickets,
-        revenue: t.revenue
+        revenue: t.revenue,
       };
     });
 
@@ -198,7 +195,6 @@ export const getTrendsData = async (req, res) => {
   }
 };
 
-
 // controllers/dashboardController.js
 
 export const getSegmentsOverview = async (req, res) => {
@@ -208,30 +204,41 @@ export const getSegmentsOverview = async (req, res) => {
         { $match: { city: { $ne: null } } },
         { $group: { _id: "$city", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
-        { $limit: 5 }
+        { $limit: 5 },
       ]),
       User.aggregate([
         { $match: { gender: { $ne: null } } },
-        { $group: { _id: "$gender", count: { $sum: 1 } } }
+        { $group: { _id: "$gender", count: { $sum: 1 } } },
       ]),
       User.aggregate([
         {
           $group: {
             _id: "$marketingOptIn",
-            count: { $sum: 1 }
-          }
-        }
+            count: { $sum: 1 },
+          },
+        },
       ]),
       User.countDocuments({
-        lastActivity: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
-      })
+        lastActivity: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+      }),
     ]);
+
+    const grouped = byGender.reduce((acc, item) => {
+  const key = item._id.charAt(0).toUpperCase() + item._id.slice(1).toLowerCase();
+  acc[key] = (acc[key] || 0) + item.count;
+  return acc;
+}, {});
+
+const result = Object.entries(grouped).map(([key, count]) => ({
+  _id: key,
+  count
+}));
 
     res.json({
       byCity,
-      byGender,
+      byGender:result,
       marketingOptIn,
-      activeUsers: activeCount
+      activeUsers: activeCount,
     });
   } catch (err) {
     console.error("❌ Segment Fetch Error:", err);
@@ -241,11 +248,12 @@ export const getSegmentsOverview = async (req, res) => {
 
 export const getFunnelData = async (req, res) => {
   try {
-    const [totalUsers, usersWithBookings, usersWithPayments] = await Promise.all([
-      User.countDocuments(),
-      Booking.distinct("user"),
-      Payment.distinct("user"),
-    ]);
+    const [totalUsers, usersWithBookings, usersWithPayments] =
+      await Promise.all([
+        User.countDocuments(),
+        Booking.distinct("user"),
+        Payment.distinct("user"),
+      ]);
 
     const funnel = {
       totalUsers,
@@ -262,27 +270,29 @@ export const getFunnelData = async (req, res) => {
 
 export const getAgeDistribution = async (req, res) => {
   try {
-    const users = await User.find({ dob: { $exists: true, $ne: null } }).select("dob");
+    const users = await User.find({ dob: { $exists: true, $ne: null } }).select(
+      "dob"
+    );
 
     const ageGroups = {
-      'Under 18': 0,
-      '18-24': 0,
-      '25-34': 0,
-      '35-44': 0,
-      '45-54': 0,
-      '55+': 0,
+      "Under 18": 0,
+      "18-24": 0,
+      "25-34": 0,
+      "35-44": 0,
+      "45-54": 0,
+      "55+": 0,
     };
 
     const today = new Date();
 
     users.forEach((user) => {
       const age = differenceInYears(today, new Date(user.dob));
-      if (age < 18) ageGroups['Under 18']++;
-      else if (age <= 24) ageGroups['18-24']++;
-      else if (age <= 34) ageGroups['25-34']++;
-      else if (age <= 44) ageGroups['35-44']++;
-      else if (age <= 54) ageGroups['45-54']++;
-      else ageGroups['55+']++;
+      if (age < 18) ageGroups["Under 18"]++;
+      else if (age <= 24) ageGroups["18-24"]++;
+      else if (age <= 34) ageGroups["25-34"]++;
+      else if (age <= 44) ageGroups["35-44"]++;
+      else if (age <= 54) ageGroups["45-54"]++;
+      else ageGroups["55+"]++;
     });
 
     res.json(ageGroups);
@@ -291,6 +301,3 @@ export const getAgeDistribution = async (req, res) => {
     res.status(500).json({ error: "Failed to calculate age distribution" });
   }
 };
-
-
-
