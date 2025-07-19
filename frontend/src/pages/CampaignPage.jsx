@@ -32,15 +32,17 @@ const CampaignPage = () => {
   const applyFilters = () => {
     let result = [...allUsers];
 
+
     filters.forEach(({ key, value, type }) => {
       if (!value) return;
 
       result = result.filter((user) => {
         if (type === "boolean") return user[key] === (value === "true");
         if (type === "number") return Number(user[key]) >= Number(value);
-        return String(user[key] || "").toLowerCase().includes(value.toLowerCase());
+        return String(user[key] || "")?.toLowerCase().includes(value?.toLowerCase());
       });
     });
+
 
     setFilteredUsers(result);
   };
@@ -276,7 +278,7 @@ const CampaignPage = () => {
       {/* Marketing Modal */}
       {showMarketingModal && (
         <MarketingModal
-          users={filteredUsers}
+          users={filteredUsers.filter((u) => u.marketing === true)}
           onClose={() => setShowMarketingModal(false)}
         />
       )}

@@ -817,3 +817,26 @@ export const importCSVData = async (req, res) => {
   }
 };
 
+
+export const addContactHandler = async (req,res) => {
+  try {
+    const {firstName,lastName,email,mobile,gender,city,state,country,dob,instagram,spotify,tiktok,marketingOptIn} = req.body
+
+    console.log(req.body)
+    const user = await User.create({
+      firstName,lastName,email,mobile,gender,city,state,country,dob,socialMedia:{
+        instagram,spotify,tiktok
+      },marketingOptIn
+    })
+
+    res.status(200).json({
+      msg: user ? user : null
+    })
+  } catch (error) {
+    console.log(error)
+    res.status(400).json({
+      msg:"Error while uploading contact"
+    })
+  }
+}
+
