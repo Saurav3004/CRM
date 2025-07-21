@@ -9,6 +9,9 @@ import dashboardRoutes from './routes/dashboardRoute.js'
 import exportRoutes from './routes/exportRoute.js'
 import integrateRoutes from './routes/integrationRoute.js'
 import marketingRoute from './routes/marketingRoute.js'
+import dropRoutes from './routes/dropRoute.js'
+import verifyRoutes from './routes/VerifyRoute.js'
+import subscriberRoutes from './routes/subscriberRoute.js'
 
 const app = express();
 app.use(cors())
@@ -24,6 +27,9 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use("/api/export",exportRoutes)
 app.use("/api/integrate/eventbrite",integrateRoutes)
 app.use("/api/marketing",marketingRoute)
+app.use("/api/drops", dropRoutes);
+app.use("/api/verify", verifyRoutes);
+// app.use("/api/subscribers", subscriberRoutes);
 
 
 app.listen(3000,() => {

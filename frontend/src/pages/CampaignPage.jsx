@@ -1,11 +1,8 @@
-// src/pages/CampaignPage.jsx
-
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import MarketingModal from "../components/MarketingModal";
-import { BACKEND_URI } from "../utils";
-
-const VITE_API = import.meta.env.VITE_API_URL
+import CreateDropModal from "../components/CreateDropModal"; // ✅ Add this
+const VITE_API = import.meta.env.VITE_API_URL;
 
 const FILTER_OPTIONS = [
   { label: "City", key: "city", type: "text" },
@@ -22,6 +19,7 @@ const CampaignPage = () => {
   const [filters, setFilters] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [showMarketingModal, setShowMarketingModal] = useState(false);
+  const [showDropModal, setShowDropModal] = useState(false); // ✅ Drop modal state
 
   useEffect(() => {
     axios.get(`${VITE_API}/api/user/allusers`).then((res) => {
@@ -31,19 +29,14 @@ const CampaignPage = () => {
 
   const applyFilters = () => {
     let result = [...allUsers];
-
-
     filters.forEach(({ key, value, type }) => {
       if (!value) return;
-
       result = result.filter((user) => {
         if (type === "boolean") return user[key] === (value === "true");
         if (type === "number") return Number(user[key]) >= Number(value);
-        return String(user[key] || "")?.toLowerCase().includes(value?.toLowerCase());
+        return String(user[key] || "").toLowerCase().includes(value.toLowerCase());
       });
     });
-
-
     setFilteredUsers(result);
   };
 
@@ -54,13 +47,10 @@ const CampaignPage = () => {
   const updateFilter = (index, field, val) => {
     const updated = [...filters];
     updated[index][field] = val;
-
-    // Auto update type when key changes
     if (field === "key") {
       const found = FILTER_OPTIONS.find(f => f.key === val);
       updated[index].type = found?.type || "text";
     }
-
     setFilters(updated);
   };
 
@@ -163,9 +153,9 @@ const CampaignPage = () => {
           </div>
         </div>
 
-        {/* Summary Section */}
+        {/* Summary Section with Create Drop Button */}
         <div className="bg-white/80 backdrop-blur-sm p-5 rounded-2xl shadow-lg border border-white/20 mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-wrap">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl">
                 <span className="text-white text-sm">👥</span>
@@ -177,21 +167,30 @@ const CampaignPage = () => {
                 <p className="text-gray-600">Matched Users</p>
               </div>
             </div>
-            
-            {filteredUsers.length > 0 && (
+
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => setShowMarketingModal(true)}
-                className="px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                onClick={() => setShowDropModal(true)}
+                className="px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
               >
-                <span className="text-lg">📤</span>
-                Send Campaign
+                <span className="text-lg">🧲</span>
+                Create Drop
               </button>
-            )}
+
+              {filteredUsers.length > 0 && (
+                <button
+                  onClick={() => setShowMarketingModal(true)}
+                  className="px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                >
+                  <span className="text-lg">📤</span>
+                  Send Campaign
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Data Table */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
+      <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20 overflow-hidden">
           <div className="p-6 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-lg">
@@ -281,6 +280,11 @@ const CampaignPage = () => {
           users={filteredUsers.filter((u) => u.marketing === true)}
           onClose={() => setShowMarketingModal(false)}
         />
+      )}
+
+      {/* Create Drop Modal */}
+      {showDropModal && (
+        <CreateDropModal onClose={() => setShowDropModal(false)} />
       )}
     </div>
   );

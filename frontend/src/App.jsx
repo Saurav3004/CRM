@@ -7,6 +7,9 @@ import UserProfilePage from "./pages/UserProfilePage";
 import BookingDetails from "./pages/BookingPage";
 import IntegrationPage from "./pages/IntegrationPage";
 import IntegrateSuccess from "./pages/IntegrateSuccessPage";
+import SubscribePage from "./pages/SubscriberPage";
+import SubscriptionSuccess from "./pages/SubscriptionSuccessPage";
+import EmailVerified from "./pages/EmailVerifiedPage";
 
 export default function App() {
   return (
@@ -21,6 +24,12 @@ export default function App() {
       </Route>
       <Route path="/integration" element={<IntegrationPage />} />
        <Route path="/integration-success" element={<IntegrateSuccess />} />
+       <Route path="/subscribe/:slug" element={<SubscribePage />} />
+       <Route path="/subscribe/:slug/success" element={<SubscriptionSuccess />} />
+       <Route path="/verify/success" element={<EmailVerified />} />
+
+
+
 
       {/* Standalone routes without sidebar layout */}
       {/* <Route path="/user/:id" element={<UserProfilePage />} />

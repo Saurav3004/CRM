@@ -12,10 +12,12 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "axios": "^1.10.0",
+    "classnames": "^2.5.1",
     "lucide-react": "^0.518.0",
     "papaparse": "^5.5.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-phone-input-2": "^2.15.1",
     "react-router-dom": "^7.6.2",
     "recharts": "^3.0.2",
     "xlsx": "^0.18.5"

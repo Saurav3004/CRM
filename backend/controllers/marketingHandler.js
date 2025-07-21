@@ -69,3 +69,20 @@ export const sendMarketingMessage = async (req, res) => {
     res.status(500).json({ error: 'Failed to send marketing messages' });
   }
 };
+
+
+export const sendVerificationEmail = async ({ email, token }) => {
+  const verifyLink = `${process.env.BACKEND_URL}/api/verify/${token}`;
+
+  await transporter.sendMail({
+    from: `"Louder Drops" <${process.env.EMAIL_FROM}>`,
+    to: email,
+    subject: "Confirm Your Subscription",
+    html: `
+      <h2>Welcome to the Drop 🎉</h2>
+      <p>Please confirm your email by clicking the button below:</p>
+      <a href="${verifyLink}" style="padding: 10px 20px; background: #7C3AED; color: #fff; text-decoration: none; border-radius: 5px;">Confirm Email</a>
+      <p>If you did not subscribe, you can ignore this email.</p>
+    `,
+  });
+};
