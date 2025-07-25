@@ -12,10 +12,13 @@ import marketingRoute from './routes/marketingRoute.js'
 import dropRoutes from './routes/dropRoute.js'
 import verifyRoutes from './routes/VerifyRoute.js'
 import subscriberRoutes from './routes/subscriberRoute.js'
+import webhookRoutes from './routes/instagramWebhook.js'
 
 const app = express();
 app.use(cors())
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
+
 
 dotenv.config();
 connectDB();
@@ -29,6 +32,7 @@ app.use("/api/integrate/eventbrite",integrateRoutes)
 app.use("/api/marketing",marketingRoute)
 app.use("/api/drops", dropRoutes);
 app.use("/api/verify", verifyRoutes);
+app.use("/api/webhook",webhookRoutes)
 // app.use("/api/subscribers", subscriberRoutes);
 
 

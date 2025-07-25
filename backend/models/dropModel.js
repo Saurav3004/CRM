@@ -8,6 +8,7 @@ const dropSchema = new mongoose.Schema({
   tags: [String],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   status: { type: String, enum: ["draft", "active", "closed"], default: "draft" },
+  keywords: [String],
   createdAt: { type: Date, default: Date.now }
 });
 

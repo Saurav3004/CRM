@@ -3,6 +3,7 @@ import Drop from "../models/dropModel.js";
 import Subscriber from "../models/subscriberModel.js";
 import crypto from 'crypto'
 import { sendVerificationEmail } from "../controllers/marketingHandler.js";
+import { getAllDrops } from "../controllers/dropController.js";
 
 const router = express.Router();
 
@@ -64,4 +65,6 @@ router.post("/:slug/subscribe", async (req, res) => {
   }
 });
 
+
+router.get("/alldrops",getAllDrops)
 export default router;

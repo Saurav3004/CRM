@@ -4,7 +4,12 @@ import axios from "axios";
 const VITE_API = import.meta.env.VITE_API_URL;
 
 const CreateDropModal = ({ onClose }) => {
-  const [form, setForm] = useState({ name: "", description: "", tags: "" });
+  const [form, setForm] = useState({ 
+    name: "", 
+    description: "", 
+    tags: "", 
+    keywords: "" 
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [publicLink, setPublicLink] = useState("");
   const [copied, setCopied] = useState(false);
@@ -22,6 +27,7 @@ const CreateDropModal = ({ onClose }) => {
       const payload = {
         ...form,
         tags: form.tags.split(",").map((tag) => tag.trim()),
+        keywords: form.keywords.split(",").map((kw) => kw.trim()),
       };
 
       const { data } = await axios.post(`${VITE_API}/api/drops`, payload);
@@ -67,7 +73,7 @@ const CreateDropModal = ({ onClose }) => {
                 onClick={handleCopy}
                 className="mt-2 sm:mt-0 px-4 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
               >
-                {copied ? "✅!" : "📋"}
+                {copied ? "✅ Copied!" : "📋 Copy"}
               </button>
             </div>
           </div>
@@ -113,6 +119,20 @@ const CreateDropModal = ({ onClose }) => {
                 onChange={handleChange}
                 className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 placeholder="concert, vip, india"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Keywords (comma separated)
+              </label>
+              <input
+                type="text"
+                name="keywords"
+                value={form.keywords}
+                onChange={handleChange}
+                className="w-full border border-gray-300 px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="tickets, pass, link, vip"
               />
             </div>
 
