@@ -16,7 +16,8 @@ import {
   Mail,
   Calendar,
   HelpCircle,
-  LogOut
+  LogOut,
+  Droplet
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,6 +32,7 @@ export default function MainLayout() {
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3, description: 'Overview & Analytics' },
     { path: '/audience', label: 'Audience', icon: Users, description: 'Manage Contacts' },
     { path: '/campaign', label: 'Campaign', icon: Megaphone, description: 'Marketing Campaigns' },
+    {path: '/drops',label: 'Drop',icon:Droplet,description:"Your all drops"}
   ];
 
   const secondaryItems = [

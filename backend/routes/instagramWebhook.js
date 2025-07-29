@@ -2,6 +2,8 @@
 import express from "express";
 import Drop from "../models/dropModel.js";
 import { sendInstagramMessage } from "../utils/sendInstagramMessage.js";
+// import Subscriber from "../models/subscriberModel.js";
+import InstagramSubscriberModel from "../models/InstagramSubscriberModel.js";
 const router = express.Router();
 
 router.get("/", (req, res) => {
@@ -34,37 +36,44 @@ router.post("/", async (req, res) => {
     const messageText = message?.text?.toLowerCase() || null;
     const isEcho = message?.is_echo || false;
 
-    console.log("🔔 Webhook triggered");
-    console.log("👤 Sender ID:", senderId);
-    console.log("💬 Message:", messageText);
-
-    // Ignore echo messages or anything without text
     if (!messageText || !senderId || isEcho) {
-      console.log("⛔ Skipping self-message or invalid");
       return res.sendStatus(200);
     }
 
-    // Search for drop
     const drop = await Drop.findOne({ keywords: messageText });
-    const responseText = drop
-      ? `🎟️ Get your tickets for "${drop.name}": ${process.env.FRONTEND_URL}/subscribe/${drop.slug}`
-      : `Sorry, I couldn't find any drop for "${messageText}".`;
 
-    console.log("📤 Responding with:", responseText);
-    await sendInstagramMessage(senderId, responseText);
+    if (drop) {
+      // 🔄 Upsert subscriber
+      let subscriber = await InstagramSubscriberModel.findOne({ instagramId: senderId });
+
+      if (!subscriber) {
+        subscriber = new InstagramSubscriberModel({
+          instagramId: senderId,
+          subscribedDrops: [{ drop: drop._id }],
+        });
+      } else {
+        const alreadySubscribed = subscriber.subscribedDrops.some(
+          (d) => d.drop.toString() === drop._id.toString()
+        );
+        if (!alreadySubscribed) {
+          subscriber.subscribedDrops.push({ drop: drop._id });
+        }
+      }
+
+      await subscriber.save();
+
+      const responseText = `🎟️ Get your tickets for "${drop.name}": ${process.env.FRONTEND_URL}/subscribe/${drop.slug}`;
+      await sendInstagramMessage(senderId, responseText);
+    } else {
+      await sendInstagramMessage(senderId, `Sorry, no drop found for "${messageText}".`);
+    }
 
     return res.sendStatus(200);
   } catch (err) {
-    console.error("❌ Webhook error:", err);
+    console.error("Webhook error:", err);
     return res.sendStatus(500);
   }
 });
-
-
-
-
-
-
 
 
 export default router;

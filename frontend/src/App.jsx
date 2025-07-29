@@ -10,6 +10,8 @@ import IntegrateSuccess from "./pages/IntegrateSuccessPage";
 import SubscribePage from "./pages/SubscriberPage";
 import SubscriptionSuccess from "./pages/SubscriptionSuccessPage";
 import EmailVerified from "./pages/EmailVerifiedPage";
+import DropPage from "./pages/DropPage";
+import DropDetail from "./pages/DropDetail";
 
 export default function App() {
   return (
@@ -20,6 +22,8 @@ export default function App() {
         <Route path="audience" element={<ContactPage />} />
         <Route path="campaign" element={<CampaignPage />} />
         <Route path="user/:id" element={<UserProfilePage />} />
+        <Route path="/drops" element={<DropPage />} />
+        <Route path="/drops/:id" element={<DropDetail />} />
       <Route path="user/booking/:bookingId" element={<BookingDetails />} />
       </Route>
       <Route path="/integration" element={<IntegrationPage />} />

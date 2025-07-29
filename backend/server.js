@@ -13,6 +13,8 @@ import dropRoutes from './routes/dropRoute.js'
 import verifyRoutes from './routes/VerifyRoute.js'
 import subscriberRoutes from './routes/subscriberRoute.js'
 import webhookRoutes from './routes/instagramWebhook.js'
+import scheduleRoute from './routes/scheduleRoute.js'
+import './utils/cronHandler.js'
 
 const app = express();
 app.use(cors())
@@ -33,6 +35,7 @@ app.use("/api/marketing",marketingRoute)
 app.use("/api/drops", dropRoutes);
 app.use("/api/verify", verifyRoutes);
 app.use("/api/webhook",webhookRoutes)
+app.use("/api/scheduled-message",scheduleRoute)
 // app.use("/api/subscribers", subscriberRoutes);
 
 

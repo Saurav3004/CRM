@@ -1,17 +1,19 @@
 import mongoose from "mongoose";
 
 const subscriberSchema = new mongoose.Schema({
-  fullName: { type: String, required: true },
-  email: { type: String, required: true },
+  fullName: String,
+  email: String,
   phone: String,
   city: String,
   source: { type: String, default: "form" },
-  dropId: { type: mongoose.Schema.Types.ObjectId, ref: "Drop" },
+  dropIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Drop" }], // CHANGED
   tags: [String],
+  instagramId: { type: String, unique: true, sparse: true },
   isVerified: { type: Boolean, default: false },
   verificationToken: String,
   createdAt: { type: Date, default: Date.now }
 });
+
 
 const Subscriber = mongoose.model("Subscriber", subscriberSchema);
 export default Subscriber;
